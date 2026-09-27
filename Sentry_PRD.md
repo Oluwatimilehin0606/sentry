@@ -113,6 +113,25 @@ There is no low-cost, low-friction tool that tells a non-technical business owne
 >
 > **Deferred until the app goes online:** hosting, managed Postgres, CI, a real email provider (e.g. Resend free tier) and cloud file storage.
 
+> **Note — Visual design preview (2026-09-27)**
+>
+> [design.html](design.html) is the working style guide for the UI. Open it in a browser to see the colours, typography, buttons, inputs and a sample report card. It will seed the Tailwind v4 / shadcn/ui theme in Phase 0.
+>
+> - **Colour:** one accent blue (`#1F5FAD` light / `#6EA2EE` dark) for everything clickable, on cool blue-grey neutrals. Red, amber, slate and green are reserved for critical, medium, low and pass. Grades A–F each have their own colour. Light and dark themes are both defined, with token names matching shadcn/ui (`--primary`, `--muted-foreground`, etc.).
+> - **Body font:** Public Sans. **Mono font:** JetBrains Mono, used only for check IDs, DNS records and scan evidence.
+> - **Heading font (headings, grades, scores): Bricolage Grotesque — decided.** Four free Google Fonts were compared on the real headings, grade card and score using a temporary switcher in the preview:
+>
+>   | Candidate | Character | Result |
+>   |---|---|---|
+>   | **Bricolage Grotesque** | Warm and approachable, a little quirky at bold weights | **Chosen** — fits Sentry's plain-English, non-intimidating tone |
+>   | Manrope | Calm and trustworthy, very clear numbers | Not chosen |
+>   | Instrument Sans | Clean and modern, less personality | Not chosen |
+>   | Plus Jakarta Sans | Friendly but professional | Not chosen |
+>
+>   The switcher has been removed; the preview now uses Bricolage Grotesque only.
+> - **Buttons:** primary, secondary, outline, ghost, danger and link variants; 32 / 40 / 48px sizes; default, hover, focus, loading and disabled states.
+> - **Inputs:** domain field with a fixed `https://` prefix and live validation messages, email, password with Show/Hide, re-scan interval dropdown, DNS verification record with Copy, and the terms-of-service checkbox.
+
 ---
 
 ## 8. Risk Scoring Model (proposed)
@@ -146,6 +165,12 @@ Composite score maps to a letter grade or 0–100 scale, displayed prominently a
 
 ## 11. Open Questions
 
-- Domain verification method — DNS TXT record vs. email confirmation (TXT is more robust but adds friction).
-- Whether report explanations are fully templated or partially AI-generated for variability.
 - Pricing/monetization model post-program (not required for MVP, but likely to come up in judging).
+
+### Resolved (2026-09-27)
+
+| Question | Decision | Reason |
+|---|---|---|
+| Domain verification method — DNS TXT record vs. email confirmation | **DNS TXT record** (`sentry-verify=<token>`) | Proves control of the domain itself; email confirmation only proves access to an inbox. |
+| Report explanations — fully templated or partially AI-generated | **Fully templated** — one pre-written block per finding type | Deterministic, fast, no API cost, and no risk of made-up statements in a security report. AI rewording can be added after the MVP. |
+| Heading font for headings, grades and scores | **Bricolage Grotesque** | Chosen after comparing four free Google Fonts in [design.html](design.html). See the design note in section 7. |

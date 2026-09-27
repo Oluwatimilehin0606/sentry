@@ -25,11 +25,28 @@ SMEs are prime targets for opportunistic cyberattacks (phishing, ransomware, cre
 
 ## Tech Stack
 
-- **Frontend:** React (Vite)
-- **Backend:** Node.js / Express API
-- **Database:** PostgreSQL — users, scan history, findings
-- **Scanning:** SSL/TLS checks, HTTP header checks (CSP, HSTS, X-Frame-Options, etc.), and a rate-limited curated wordlist probe for exposed paths
-- **Auth:** JWT in httpOnly cookies, bcrypt password hashing
+All free and open source, and runs locally with no cloud accounts or API keys.
+
+- **Language:** TypeScript (client and server)
+- **Frontend:** React 19 + Vite, React Router, TanStack Query, React Hook Form + zod
+- **UI:** Tailwind CSS v4 + shadcn/ui, lucide-react icons, Recharts
+- **Backend:** Node.js 24 + Express 5, zod, helmet, pino
+- **Database:** PostgreSQL 18 with Drizzle ORM — users, domains, scan history, findings
+- **Auth:** Better Auth (self-hosted) — email + password, database-backed sessions in httpOnly cookies
+- **Background jobs:** pg-boss (Postgres-backed queue) for scans and scheduled re-scans
+- **Scanning:** Node's built-in `tls`, `dns` and `fetch` — SSL/TLS checks, HTTP security headers (CSP, HSTS, X-Frame-Options, etc.), and a rate-limited curated wordlist probe for exposed paths
+- **Email:** Nodemailer + React Email, caught locally by Mailpit
+- **PDF export:** @react-pdf/renderer
+- **Testing:** Vitest, Supertest, Playwright
+
+See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the full stack rationale and phased build plan.
+
+## Design
+
+[design.html](design.html) is the visual style guide — open it in a browser to see colours, typography, buttons and inputs in light and dark themes.
+
+- **Fonts:** Bricolage Grotesque (headings, grades, scores), Public Sans (body), JetBrains Mono (technical evidence)
+- **Colour:** one accent blue for actions; red, amber, slate and green reserved for finding severity
 
 ## Getting Started
 

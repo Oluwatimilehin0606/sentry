@@ -50,7 +50,7 @@ Every choice is the strongest **free, open-source** option for its job and runs 
 
 **Work**
 - Monorepo layout: `client/` (Vite + React + TypeScript), `server/` (Node + Express + TypeScript), root `package.json` with workspaces and a shared `tsconfig.base.json`.
-- Tailwind v4 + shadcn/ui initialised in the client.
+- Tailwind v4 + shadcn/ui initialised in the client, themed from [design.html](design.html): its light/dark colour tokens become the shadcn CSS variables (`--primary`, `--muted-foreground`, severity and grade colours), and its fonts are loaded from Google Fonts — **Bricolage Grotesque** (headings, grades, scores), **Public Sans** (body), **JetBrains Mono** (technical evidence).
 - Create `sentry_dev` and `sentry_test` databases on the local PostgreSQL 18 install (`npm run db:create` script).
 - Drizzle ORM + drizzle-kit wired up, plus a `db` module in the server.
 - Env config via `.env` + `.env.example`, validated with zod at startup (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `APP_URL`, `SMTP_URL`, `STORAGE_DIR`, `DEV_SCAN_ALLOWLIST`).

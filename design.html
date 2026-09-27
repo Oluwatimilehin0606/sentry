@@ -1,0 +1,835 @@
+<title>Sentry Design Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* ---------- Tokens: light ---------- */
+  :root {
+    --bg: #F5F7FA;
+    --surface: #FFFFFF;
+    --surface-2: #EDF1F6;
+    --border: #D9E0EA;
+    --border-strong: #B7C2D2;
+    --text: #111A2B;
+    --text-muted: #56637A;
+    --text-subtle: #717D92;
+
+    --accent: #1F5FAD;
+    --accent-hover: #184D8F;
+    --accent-soft: #E3EDF9;
+    --on-accent: #FFFFFF;
+
+    --critical: #C2322C;
+    --critical-soft: #FBE9E8;
+    --on-critical: #FFFFFF;
+    --medium: #A86400;
+    --medium-soft: #FDF1DD;
+    --low: #5E6B7E;
+    --low-soft: #ECEFF3;
+    --pass: #1D7F47;
+    --pass-soft: #E3F4EA;
+
+    --grade-a: #1D7F47;
+    --grade-b: #4E8A25;
+    --grade-c: #9A7300;
+    --grade-d: #C0571A;
+    --grade-f: #C2322C;
+
+    --ring: color-mix(in srgb, var(--accent) 32%, transparent);
+    --shadow: 0 1px 2px rgb(17 26 43 / 0.05), 0 6px 16px rgb(17 26 43 / 0.06);
+
+    --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Public Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  /* ---------- Tokens: dark (system setting) ---------- */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0B111C;
+      --surface: #121A28;
+      --surface-2: #1A2436;
+      --border: #243148;
+      --border-strong: #37465F;
+      --text: #E6EBF3;
+      --text-muted: #9EAABD;
+      --text-subtle: #7E8BA1;
+      --accent: #6EA2EE;
+      --accent-hover: #8DB6F2;
+      --accent-soft: #16294A;
+      --on-accent: #0B111C;
+      --critical: #F0716A;
+      --critical-soft: #3A1818;
+      --on-critical: #1A0B0B;
+      --medium: #F0A63A;
+      --medium-soft: #372A12;
+      --low: #A3AFC2;
+      --low-soft: #222C3C;
+      --pass: #4CC784;
+      --pass-soft: #12301F;
+      --grade-a: #4CC784;
+      --grade-b: #93C85A;
+      --grade-c: #E5BF3A;
+      --grade-d: #EE9150;
+      --grade-f: #F0716A;
+      --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 16px rgb(0 0 0 / 0.25);
+    }
+  }
+
+  /* ---------- Tokens: dark (explicit choice) ---------- */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0B111C;
+    --surface: #121A28;
+    --surface-2: #1A2436;
+    --border: #243148;
+    --border-strong: #37465F;
+    --text: #E6EBF3;
+    --text-muted: #9EAABD;
+    --text-subtle: #7E8BA1;
+    --accent: #6EA2EE;
+    --accent-hover: #8DB6F2;
+    --accent-soft: #16294A;
+    --on-accent: #0B111C;
+    --critical: #F0716A;
+    --critical-soft: #3A1818;
+    --on-critical: #1A0B0B;
+    --medium: #F0A63A;
+    --medium-soft: #372A12;
+    --low: #A3AFC2;
+    --low-soft: #222C3C;
+    --pass: #4CC784;
+    --pass-soft: #12301F;
+    --grade-a: #4CC784;
+    --grade-b: #93C85A;
+    --grade-c: #E5BF3A;
+    --grade-d: #EE9150;
+    --grade-f: #F0716A;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 16px rgb(0 0 0 / 0.25);
+  }
+
+  /* ---------- Base ---------- */
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 32px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 56px;
+  }
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  code, .mono { font-family: var(--font-mono); font-size: 0.8125rem; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- Header ---------- */
+  .top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-block: 16px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 10;
+    background: var(--bg);
+  }
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+  .control { display: flex; align-items: center; gap: 8px; }
+  .control-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-subtle); }
+  .seg { flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: var(--accent);
+    color: var(--on-accent);
+    display: grid; place-items: center;
+  }
+  .brand-name { font-family: var(--font-display); font-weight: 700; font-size: 1.375rem; letter-spacing: -0.01em; }
+  .brand-sub { font-size: 0.8125rem; color: var(--text-muted); }
+
+  .seg {
+    display: inline-flex;
+    padding: 3px;
+    gap: 2px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .seg button {
+    font: 500 0.8125rem var(--font-body);
+    color: var(--text-muted);
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  .seg button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
+
+  /* ---------- Sections ---------- */
+  section { display: flex; flex-direction: column; gap: 24px; }
+  .sec-head { display: flex; flex-direction: column; gap: 6px; max-width: 65ch; }
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .sec-head h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.01em; }
+  .sec-head p { color: var(--text-muted); }
+  .group-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-subtle);
+  }
+  .group { display: flex; flex-direction: column; gap: 12px; }
+
+  /* ---------- Colour ---------- */
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .swatch {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .chip { height: 64px; border-bottom: 1px solid var(--border); }
+  .swatch-meta { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 2px; }
+  .swatch-name { font-weight: 600; font-size: 0.875rem; }
+  .swatch-token { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); }
+  .swatch-hex { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-subtle); font-variant-numeric: tabular-nums; }
+
+  .grade-scale {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .grade-step {
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-top: 4px solid var(--g);
+  }
+  .grade-step + .grade-step { border-left: 1px solid var(--border); }
+  .grade-letter { font-family: var(--font-display); font-weight: 700; font-size: 1.75rem; line-height: 1; color: var(--g); }
+  .grade-range { font-size: 0.8125rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+  /* ---------- Typography ---------- */
+  .type-list {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+  .type-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 24px;
+    padding: 20px 24px;
+    align-items: baseline;
+  }
+  .type-row + .type-row { border-top: 1px solid var(--border); }
+  .type-meta { display: flex; flex-direction: column; gap: 2px; }
+  .type-meta strong { font-size: 0.875rem; }
+  .type-meta span { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); }
+  .t-display { font-family: var(--font-display); font-weight: 700; font-size: clamp(2rem, 5vw, 2.75rem); line-height: 1.1; letter-spacing: -0.02em; }
+  .t-h1 { font-family: var(--font-display); font-weight: 700; font-size: 2rem; line-height: 1.2; letter-spacing: -0.01em; }
+  .t-h2 { font-family: var(--font-display); font-weight: 500; font-size: 1.5rem; line-height: 1.25; }
+  .t-h3 { font-family: var(--font-body); font-weight: 600; font-size: 1.125rem; line-height: 1.4; }
+  .t-body { font-size: 1rem; line-height: 1.6; max-width: 65ch; }
+  .t-small { font-size: 0.875rem; line-height: 1.5; color: var(--text-muted); }
+  .t-caption { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-subtle); }
+  .t-mono { font-family: var(--font-mono); font-size: 0.8125rem; }
+
+  .faces { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .face {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    padding: 16px 20px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .face-aa { font-size: 2.5rem; line-height: 1.1; }
+  .face-role { font-size: 0.8125rem; color: var(--text-muted); }
+
+  /* ---------- Buttons ---------- */
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    font: 600 0.9375rem/1 var(--font-body);
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 120ms, border-color 120ms, color 120ms, box-shadow 120ms;
+  }
+  .btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--ring); }
+  .btn svg { width: 16px; height: 16px; flex: none; }
+  .btn-primary { background: var(--accent); color: var(--on-accent); }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary { background: var(--surface-2); color: var(--text); }
+  .btn-secondary:hover { background: color-mix(in srgb, var(--surface-2) 80%, var(--text) 8%); }
+  .btn-outline { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
+  .btn-outline:hover { background: var(--surface-2); }
+  .btn-ghost { background: transparent; color: var(--text); }
+  .btn-ghost:hover { background: var(--surface-2); }
+  .btn-danger { background: var(--critical); color: var(--on-critical); }
+  .btn-danger:hover { background: color-mix(in srgb, var(--critical) 88%, #000); }
+  .btn-link { background: transparent; color: var(--accent); padding: 0 4px; height: auto; text-decoration: underline; text-underline-offset: 3px; }
+  .btn-sm { height: 32px; padding: 0 12px; font-size: 0.8125rem; }
+  .btn-lg { height: 48px; padding: 0 22px; font-size: 1rem; }
+  .btn:disabled, .btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
+  .btn[aria-busy="true"] { cursor: progress; }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } .btn { transition: none; } }
+
+  .panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    padding: 24px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  .state-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+  .state { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+  .state small { font-size: 0.75rem; color: var(--text-subtle); }
+  .btn.is-hover.btn-primary { background: var(--accent-hover); }
+  .btn.is-focus { box-shadow: 0 0 0 3px var(--ring); }
+
+  /* ---------- Inputs ---------- */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label, .field .label { font-size: 0.875rem; font-weight: 600; }
+  .hint { font-size: 0.8125rem; color: var(--text-muted); }
+  .error { font-size: 0.8125rem; color: var(--critical); display: flex; gap: 6px; align-items: flex-start; }
+  .ok { font-size: 0.8125rem; color: var(--pass); }
+
+  .input, .select select {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font: 400 1rem var(--font-body);
+    transition: border-color 120ms, box-shadow 120ms;
+  }
+  .input::placeholder { color: var(--text-subtle); }
+  .input:focus, .select select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+  .input[aria-invalid="true"] { border-color: var(--critical); }
+  .input[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--critical) 28%, transparent); }
+  .input:disabled { background: var(--surface-2); color: var(--text-subtle); cursor: not-allowed; }
+
+  .affix {
+    display: flex;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+    transition: border-color 120ms, box-shadow 120ms;
+  }
+  .affix:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+  .affix.invalid { border-color: var(--critical); }
+  .affix.invalid:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--critical) 28%, transparent); }
+  .affix-pre {
+    display: flex; align-items: center;
+    padding: 0 10px 0 12px;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--text-subtle);
+    border-right: 1px solid var(--border);
+    background: var(--surface-2);
+    border-radius: var(--radius) 0 0 var(--radius);
+  }
+  .affix .input { border: 0; box-shadow: none; min-width: 0; }
+  .affix .input:focus { box-shadow: none; }
+  .affix-btn {
+    border: 0; background: transparent; color: var(--text-muted);
+    font: 600 0.8125rem var(--font-body);
+    padding: 0 12px; cursor: pointer; border-radius: 0 var(--radius) var(--radius) 0;
+  }
+  .affix-btn:hover { color: var(--text); }
+
+  .select { position: relative; }
+  .select select { appearance: none; padding-right: 36px; cursor: pointer; }
+  .select::after {
+    content: "";
+    position: absolute; right: 14px; top: 50%;
+    width: 7px; height: 7px;
+    border-right: 2px solid var(--text-muted);
+    border-bottom: 2px solid var(--text-muted);
+    transform: translateY(-70%) rotate(45deg);
+    pointer-events: none;
+  }
+
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9375rem; }
+  .check input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accent); flex: none; }
+
+  .txt-record {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    font-family: var(--font-mono); font-size: 0.8125rem;
+    overflow-x: auto;
+  }
+
+  /* ---------- In context ---------- */
+  .context { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
+  .score-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .score-top { display: flex; align-items: center; gap: 16px; }
+  .grade-badge {
+    width: 72px; height: 72px; flex: none;
+    border-radius: 14px;
+    border: 3px solid var(--grade-c);
+    display: grid; place-items: center;
+    font-family: var(--font-display); font-weight: 700; font-size: 2.5rem; line-height: 1;
+    color: var(--grade-c);
+  }
+  .score-num { font-family: var(--font-display); font-weight: 700; font-size: 2rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .score-num small { font-size: 1rem; color: var(--text-subtle); font-weight: 500; }
+  .meter { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+  .meter span { display: block; height: 100%; width: 72%; background: var(--grade-c); border-radius: inherit; }
+  .counts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 24px; padding: 0 10px;
+    border-radius: 99px;
+    font-size: 0.75rem; font-weight: 600;
+    white-space: nowrap;
+  }
+  .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .pill-critical { background: var(--critical-soft); color: var(--critical); }
+  .pill-medium { background: var(--medium-soft); color: var(--medium); }
+  .pill-low { background: var(--low-soft); color: var(--low); }
+  .pill-pass { background: var(--pass-soft); color: var(--pass); }
+
+  .finding {
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--critical);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    padding: 20px 24px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .finding-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+  .finding h3 { font-size: 1.125rem; font-weight: 600; flex: 1 1 240px; }
+  .finding dl { margin: 0; display: grid; gap: 12px; }
+  .finding dt { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-subtle); }
+  .finding dd { margin: 2px 0 0; max-width: 65ch; }
+  .evidence {
+    font-family: var(--font-mono); font-size: 0.8125rem;
+    color: var(--text-muted);
+    padding-top: 12px; border-top: 1px dashed var(--border);
+    overflow-x: auto; white-space: nowrap;
+  }
+
+  footer { font-size: 0.8125rem; color: var(--text-subtle); border-top: 1px solid var(--border); padding-top: 20px; }
+
+  /* ---------- Narrow screens ---------- */
+  @media (max-width: 720px) {
+    .wrap { padding-inline: 16px; gap: 44px; }
+    .type-row { grid-template-columns: 1fr; gap: 8px; padding: 16px; }
+    .context { grid-template-columns: 1fr; }
+    .grade-scale { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .grade-step { padding: 12px 8px; }
+    .grade-range { font-size: 0.6875rem; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">Sentry</div>
+        <div class="brand-sub">Design preview · v0.1</div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="control">
+        <span class="control-label" id="theme-label">Theme</span>
+        <div class="seg" role="group" aria-labelledby="theme-label">
+          <button type="button" id="theme-system" data-theme-set="system" aria-pressed="true">System</button>
+          <button type="button" id="theme-light" data-theme-set="light" aria-pressed="false">Light</button>
+          <button type="button" id="theme-dark" data-theme-set="dark" aria-pressed="false">Dark</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= COLOUR ================= -->
+  <section aria-labelledby="color-h">
+    <div class="sec-head">
+      <span class="eyebrow">Colour</span>
+      <h2 id="color-h">Calm by default, loud only when it matters</h2>
+      <p>One blue for everything you can act on. Red, amber and green are reserved for risk, so a business owner learns fast that colour means something.</p>
+    </div>
+
+    <div class="group">
+      <span class="group-label">Brand &amp; neutrals</span>
+      <div class="swatches">
+        <div class="swatch"><div class="chip" style="background:var(--accent)"></div><div class="swatch-meta"><span class="swatch-name">Sentinel blue</span><span class="swatch-token">--primary</span><span class="swatch-hex">#1F5FAD / #6EA2EE</span></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--accent-soft)"></div><div class="swatch-meta"><span class="swatch-name">Blue tint</span><span class="swatch-token">--primary-soft</span><span class="swatch-hex">#E3EDF9 / #16294A</span></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--text)"></div><div class="swatch-meta"><span class="swatch-name">Ink</span><span class="swatch-token">--foreground</span><span class="swatch-hex">#111A2B / #E6EBF3</span></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--text-muted)"></div><div class="swatch-meta"><span class="swatch-name">Slate</span><span class="swatch-token">--muted-foreground</span><span class="swatch-hex">#56637A / #9EAABD</span></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--border-strong)"></div><div class="swatch-meta"><span class="swatch-name">Line</span><span class="swatch-token">--border</span><span class="swatch-hex">#B7C2D2 / #37465F</span></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--surface-2)"></div><div class="swatch-meta"><span class="swatch-name">Mist</span><span class="swatch-token">--muted</span><span class="swatch-hex">#EDF1F6 / #1A2436</span></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--bg)"></div><div class="swatch-meta"><span class="swatch-name">Paper</span><span class="swatch-token">--background</span><span class="swatch-hex">#F5F7FA / #0B111C</span></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--surface)"></div><div class="swatch-meta"><span class="swatch-name">Card</span><span class="swatch-token">--card</span><span class="swatch-hex">#FFFFFF / #121A28</span></div></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <span class="group-label">Finding severity</span>
+      <div class="swatches">
+        <div class="swatch"><div class="chip" style="background:var(--critical)"></div><div class="swatch-meta"><span class="swatch-name">Critical</span><span class="swatch-token">--critical</span><span class="swatch-hex">#C2322C / #F0716A</span></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--medium)"></div><div class="swatch-meta"><span class="swatch-name">Medium</span><span class="swatch-token">--medium</span><span class="swatch-hex">#A86400 / #F0A63A</span></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--low)"></div><div class="swatch-meta"><span class="swatch-name">Low</span><span class="swatch-token">--low</span><span class="swatch-hex">#5E6B7E / #A3AFC2</span></div></div>
+        <div class="swatch"><div class="chip" style="background:var(--pass)"></div><div class="swatch-meta"><span class="swatch-name">Pass</span><span class="swatch-token">--pass</span><span class="swatch-hex">#1D7F47 / #4CC784</span></div></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <span class="group-label">Grade scale (score out of 100)</span>
+      <div class="grade-scale">
+        <div class="grade-step" style="--g:var(--grade-a)"><span class="grade-letter">A</span><span class="grade-range">90–100</span></div>
+        <div class="grade-step" style="--g:var(--grade-b)"><span class="grade-letter">B</span><span class="grade-range">80–89</span></div>
+        <div class="grade-step" style="--g:var(--grade-c)"><span class="grade-letter">C</span><span class="grade-range">70–79</span></div>
+        <div class="grade-step" style="--g:var(--grade-d)"><span class="grade-letter">D</span><span class="grade-range">60–69</span></div>
+        <div class="grade-step" style="--g:var(--grade-f)"><span class="grade-letter">F</span><span class="grade-range">0–59</span></div>
+      </div>
+      <p class="hint">Any critical finding caps the grade at D.</p>
+    </div>
+  </section>
+
+  <!-- ================= TYPOGRAPHY ================= -->
+  <section aria-labelledby="type-h">
+    <div class="sec-head">
+      <span class="eyebrow">Typography</span>
+      <h2 id="type-h">Plain words, set clearly</h2>
+      <p>A friendly display face for headlines and grades, a highly legible body face for explanations, and a mono face only for technical evidence.</p>
+    </div>
+
+    <div class="faces">
+      <div class="face"><span class="face-aa" style="font-family:var(--font-display);font-weight:700">Aa 72</span><strong>Bricolage Grotesque</strong><span class="face-role">Display · headlines, grades, scores</span></div>
+      <div class="face"><span class="face-aa" style="font-family:var(--font-body);font-weight:600">Aa</span><strong>Public Sans</strong><span class="face-role">Body · explanations, UI, forms</span></div>
+      <div class="face"><span class="face-aa" style="font-family:var(--font-mono)">Aa</span><strong>JetBrains Mono</strong><span class="face-role">Mono · check IDs, DNS records, evidence</span></div>
+    </div>
+
+    <div class="type-list">
+      <div class="type-row"><div class="type-meta"><strong>Display</strong><span>44 / 1.1 · 700</span></div><div class="t-display">Your site scored a C</div></div>
+      <div class="type-row"><div class="type-meta"><strong>Heading 1</strong><span>32 / 1.2 · 700</span></div><div class="t-h1">Scan report for yourbakery.example</div></div>
+      <div class="type-row"><div class="type-meta"><strong>Heading 2</strong><span>24 / 1.25 · 500</span></div><div class="t-h2">3 issues are putting you at risk</div></div>
+      <div class="type-row"><div class="type-meta"><strong>Heading 3</strong><span>18 / 1.4 · 600</span></div><div class="t-h3">Your site doesn’t force secure connections</div></div>
+      <div class="type-row"><div class="type-meta"><strong>Body</strong><span>16 / 1.6 · 400</span></div><p class="t-body">Visitors can reach your site over an unencrypted connection. On public Wi-Fi, someone nearby could read or change what they see, including login forms and payment pages.</p></div>
+      <div class="type-row"><div class="type-meta"><strong>Small</strong><span>14 / 1.5 · 400</span></div><p class="t-small">Last scanned 27 Sep 2026 at 09:14 · took 41 seconds</p></div>
+      <div class="type-row"><div class="type-meta"><strong>Caption</strong><span>12 · 600 · caps</span></div><span class="t-caption">Why it matters</span></div>
+      <div class="type-row"><div class="type-meta"><strong>Mono</strong><span>13 / 1.5 · 400</span></div><code class="t-mono">header.hsts_missing · Strict-Transport-Security not set</code></div>
+    </div>
+  </section>
+
+  <!-- ================= BUTTONS ================= -->
+  <section aria-labelledby="btn-h">
+    <div class="sec-head">
+      <span class="eyebrow">Buttons</span>
+      <h2 id="btn-h">One clear next step</h2>
+      <p>Each screen gets one primary button. Labels say exactly what happens, like “Run scan” or “Check verification”.</p>
+    </div>
+
+    <div class="panel">
+      <div class="group">
+        <span class="group-label">Variants</span>
+        <div class="row">
+          <button class="btn btn-primary" type="button" id="run-scan">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+            <span>Run scan</span>
+          </button>
+          <button class="btn btn-secondary" type="button">View history</button>
+          <button class="btn btn-outline" type="button">Download PDF</button>
+          <button class="btn btn-ghost" type="button">Cancel</button>
+          <button class="btn btn-danger" type="button">Remove domain</button>
+          <button class="btn btn-link" type="button">How is this scored?</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <span class="group-label">Sizes</span>
+        <div class="row">
+          <button class="btn btn-primary btn-sm" type="button">Small · 32</button>
+          <button class="btn btn-primary" type="button">Default · 40</button>
+          <button class="btn btn-primary btn-lg" type="button">Large · 48</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <span class="group-label">States</span>
+        <div class="state-grid">
+          <div class="state"><button class="btn btn-primary" type="button">Run scan</button><small>Default</small></div>
+          <div class="state"><button class="btn btn-primary is-hover" type="button" tabindex="-1">Run scan</button><small>Hover</small></div>
+          <div class="state"><button class="btn btn-primary is-focus" type="button" tabindex="-1">Run scan</button><small>Keyboard focus</small></div>
+          <div class="state"><button class="btn btn-primary" type="button" aria-busy="true" tabindex="-1"><span class="spinner" aria-hidden="true"></span>Scanning…</button><small>Loading</small></div>
+          <div class="state"><button class="btn btn-primary" type="button" disabled>Run scan</button><small>Disabled</small></div>
+        </div>
+      </div>
+      <p class="hint" id="scan-status" aria-live="polite">Click “Run scan” above to see the loading state.</p>
+    </div>
+  </section>
+
+  <!-- ================= INPUTS ================= -->
+  <section aria-labelledby="input-h">
+    <div class="sec-head">
+      <span class="eyebrow">Inputs</span>
+      <h2 id="input-h">Forms that explain themselves</h2>
+      <p>Labels sit above fields, hints say what to type, and errors say how to fix the problem. Try typing in the domain field.</p>
+    </div>
+
+    <form class="panel" id="demo-form" novalidate>
+      <div class="form-grid">
+        <div class="field">
+          <label for="domain">Your website’s domain</label>
+          <div class="affix" id="domain-wrap">
+            <span class="affix-pre">https://</span>
+            <input class="input" id="domain" name="domain" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="yourbakery.example" value="yourbakery.example/menu" aria-describedby="domain-msg">
+          </div>
+          <span class="hint" id="domain-msg">Just the domain, without https:// or a page path.</span>
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input class="input" id="email" name="email" type="email" autocomplete="email" placeholder="you@yourbakery.example" value="ada@yourbakery.example">
+          <span class="hint">We’ll send score alerts here.</span>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="affix">
+            <input class="input" id="password" name="password" type="password" autocomplete="new-password" value="correct-horse-battery">
+            <button class="affix-btn" type="button" id="pw-toggle" aria-controls="password" aria-pressed="false">Show</button>
+          </div>
+          <span class="hint">At least 12 characters.</span>
+        </div>
+
+        <div class="field">
+          <label for="interval">Re-scan automatically</label>
+          <div class="select">
+            <select id="interval" name="interval">
+              <option value="none">Never</option>
+              <option value="weekly" selected>Every week</option>
+              <option value="monthly">Every month</option>
+            </select>
+          </div>
+          <span class="hint">We’ll email you if your score drops.</span>
+        </div>
+
+        <div class="field">
+          <span class="label">Verification record</span>
+          <div class="txt-record"><span>sentry-verify=7f3c9a1e24b8</span><button class="btn btn-ghost btn-sm" type="button" id="copy-txt">Copy</button></div>
+          <span class="ok">✓ Verified on 26 Sep 2026</span>
+        </div>
+
+        <div class="field">
+          <label for="disabled-input">Account ID</label>
+          <input class="input" id="disabled-input" type="text" value="usr_01J8ZK4" disabled>
+          <span class="hint">Disabled field.</span>
+        </div>
+      </div>
+
+      <label class="check" for="tos">
+        <input type="checkbox" id="tos" name="tos" checked>
+        <span>I will only scan domains I own or have written permission to test.</span>
+      </label>
+
+      <div class="row">
+        <button class="btn btn-primary" type="submit">Add domain</button>
+        <button class="btn btn-ghost" type="reset">Clear form</button>
+        <span class="hint" id="form-status" aria-live="polite"></span>
+      </div>
+    </form>
+  </section>
+
+  <!-- ================= IN CONTEXT ================= -->
+  <section aria-labelledby="ctx-h">
+    <div class="sec-head">
+      <span class="eyebrow">In context</span>
+      <h2 id="ctx-h">How it comes together on a report</h2>
+      <p>Summary first, then findings ordered by severity. Sample data for illustration.</p>
+    </div>
+
+    <div class="context">
+      <div class="score-card">
+        <div class="score-top">
+          <div class="grade-badge" aria-label="Grade C">C</div>
+          <div>
+            <div class="score-num">72<small> / 100</small></div>
+            <div class="t-small">yourbakery.example</div>
+          </div>
+        </div>
+        <div class="meter" role="img" aria-label="Score 72 out of 100"><span></span></div>
+        <p>Your site scored a C. Three issues are putting you at risk. Fix the critical one first.</p>
+        <div class="counts">
+          <span class="pill pill-critical">1 critical</span>
+          <span class="pill pill-medium">1 medium</span>
+          <span class="pill pill-low">1 low</span>
+          <span class="pill pill-pass">14 passed</span>
+        </div>
+        <button class="btn btn-outline" type="button">Download PDF</button>
+      </div>
+
+      <article class="finding">
+        <div class="finding-head">
+          <span class="pill pill-critical">Critical</span>
+          <h3>Your private settings file is public</h3>
+          <code class="mono" style="color:var(--text-subtle)">path.env_exposed</code>
+        </div>
+        <dl>
+          <div><dt>What it is</dt><dd>A file called <code>.env</code> on your site can be downloaded by anyone. It usually holds passwords and keys that connect your site to other services.</dd></div>
+          <div><dt>Why it matters</dt><dd>Attackers scan for this file automatically. With it they could log into your database, email or payment account.</dd></div>
+          <div><dt>How to fix</dt><dd>Delete the file from your public web folder today, then change every password and key it contained. Ask your web host or developer if you’re not sure where it is.</dd></div>
+        </dl>
+        <div class="evidence">GET https://yourbakery.example/.env → 200 OK · 1.2 KB · 9 KEY=VALUE lines</div>
+      </article>
+    </div>
+  </section>
+
+  <footer>
+    Sentry design preview · Tokens map to shadcn/ui CSS variables · Headings: Bricolage Grotesque · Body: Public Sans · Mono: JetBrains Mono (all Google Fonts)
+  </footer>
+</div>
+
+<script>
+  (function () {
+    // Theme switcher
+    var root = document.documentElement;
+    var buttons = document.querySelectorAll('[data-theme-set]');
+    function applyTheme(choice) {
+      if (choice === 'system') root.removeAttribute('data-theme');
+      else root.setAttribute('data-theme', choice);
+      buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.themeSet === choice)); });
+      try { localStorage.setItem('sentry-theme', choice); } catch (e) {}
+    }
+    buttons.forEach(function (b) { b.addEventListener('click', function () { applyTheme(b.dataset.themeSet); }); });
+    try { var saved = localStorage.getItem('sentry-theme'); if (saved) applyTheme(saved); } catch (e) {}
+    // Run scan loading demo
+    var runBtn = document.getElementById('run-scan');
+    var scanStatus = document.getElementById('scan-status');
+    var runLabel = runBtn.innerHTML;
+    runBtn.addEventListener('click', function () {
+      if (runBtn.getAttribute('aria-busy') === 'true') return;
+      runBtn.setAttribute('aria-busy', 'true');
+      runBtn.innerHTML = '<span class="spinner" aria-hidden="true"></span><span>Scanning…</span>';
+      scanStatus.textContent = 'Checking HTTPS, security headers and exposed files…';
+      setTimeout(function () {
+        runBtn.removeAttribute('aria-busy');
+        runBtn.innerHTML = runLabel;
+        scanStatus.textContent = 'Scan finished in 2 seconds. Your site scored a C.';
+      }, 2000);
+    });
+
+    // Domain validation
+    var domain = document.getElementById('domain');
+    var wrap = document.getElementById('domain-wrap');
+    var msg = document.getElementById('domain-msg');
+    var hostRe = /^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
+    function validateDomain() {
+      var v = domain.value.trim();
+      var problem = '';
+      if (!v) problem = 'Enter your website’s domain, like yourbakery.example.';
+      else if (/^https?:\/\//i.test(v)) problem = 'Leave out https://. We add it for you.';
+      else if (v.indexOf('/') !== -1) problem = 'Enter just the domain. Remove everything from the first “/”.';
+      else if (!hostRe.test(v)) problem = 'That doesn’t look like a domain. Check for typos, like yourbakery.example.';
+      var invalid = problem !== '';
+      domain.setAttribute('aria-invalid', String(invalid));
+      wrap.classList.toggle('invalid', invalid);
+      msg.className = invalid ? 'error' : 'ok';
+      msg.textContent = invalid ? problem : '✓ Looks good.';
+      return !invalid;
+    }
+    domain.addEventListener('input', validateDomain);
+    validateDomain();
+
+    // Password show/hide
+    var pw = document.getElementById('password');
+    var pwToggle = document.getElementById('pw-toggle');
+    pwToggle.addEventListener('click', function () {
+      var show = pw.type === 'password';
+      pw.type = show ? 'text' : 'password';
+      pwToggle.textContent = show ? 'Hide' : 'Show';
+      pwToggle.setAttribute('aria-pressed', String(show));
+    });
+
+    // Copy TXT record
+    var copyBtn = document.getElementById('copy-txt');
+    copyBtn.addEventListener('click', function () {
+      var text = 'sentry-verify=7f3c9a1e24b8';
+      function done() { copyBtn.textContent = 'Copied'; setTimeout(function () { copyBtn.textContent = 'Copy'; }, 1500); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () { copyBtn.textContent = 'Select & copy'; });
+      } else { copyBtn.textContent = 'Select & copy'; }
+    });
+
+    // Form submit (preview only)
+    var form = document.getElementById('demo-form');
+    var formStatus = document.getElementById('form-status');
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      formStatus.textContent = validateDomain() ? 'Domain added. Next, add the verification record.' : 'Fix the domain above, then try again.';
+    });
+    form.addEventListener('reset', function () {
+      setTimeout(function () { validateDomain(); formStatus.textContent = ''; }, 0);
+    });
+  })();
+</script>
