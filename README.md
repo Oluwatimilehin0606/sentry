@@ -12,6 +12,23 @@ SMEs are prime targets for opportunistic cyberattacks (phishing, ransomware, cre
 
 > There is no low-cost, low-friction tool that tells a non-technical business owner, in plain language: *"Here's your risk level, here's why it matters, and here's what to fix first."*
 
+## Current Status (27 Sep 2026)
+
+**Working local prototype.** Phase 0 is complete (apart from the database setup, which moves to the start of Phase 1), plus an early preview of the scanner.
+
+What works today, at http://localhost:5173 after `npm run dev`:
+
+- Enter a domain and get a **real security check** in about a second: HTTPS availability, certificate validity and expiry, HTTP→HTTPS redirect, and six security headers (HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, server version leaks).
+- A **score out of 100 and an A–F grade**, with every problem explained in plain English: what it is, why it matters, and how to fix it.
+- **Safety built in:** Sentry refuses to scan private or internal addresses, checks every connection (not just the first lookup), never downloads page content, and rate-limits scans.
+- Light and dark themes, and 37 automated tests.
+
+**Next up (see [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)):**
+
+1. **Phase 1:** finish the deferred database setup (PostgreSQL + Drizzle), then user accounts with Better Auth.
+2. **Phase 2:** complete the scanner: exposed-file checks (`.env`, `.git`, backups) and TLS protocol checks.
+3. **Phases 3–5:** domain ownership verification, saved reports, then the dashboard, scheduled re-scans and email alerts.
+
 ## Features
 
 | Feature | Description |

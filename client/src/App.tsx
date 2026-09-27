@@ -1,9 +1,12 @@
-import { FileWarning, Info, LockKeyhole, ShieldCheck } from 'lucide-react';
-import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { AlertCircle, FileWarning, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { ApiStatus } from '@/components/ApiStatus';
 import { DomainForm } from '@/components/DomainForm';
 import { Logo } from '@/components/Logo';
+import { ScanReport } from '@/components/ScanReport';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { runScan } from '@/lib/scan';
 
 const CHECKS = [
   {
@@ -20,6 +23,7 @@ const CHECKS = [
     Icon: FileWarning,
     title: 'Exposed private files',
     body: 'Can anyone download files that should stay private, like password settings or database backups?',
+    comingNext: true,
   },
 ];
 
@@ -32,7 +36,12 @@ const GRADES = [
 ];
 
 export function App() {
-  const [requested, setRequested] = useState<string | null>(null);
+  const scan = useMutation({ mutationFn: runScan });
+  const reportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scan.data) reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [scan.data]);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 sm:px-6">
@@ -56,33 +65,42 @@ export function App() {
             Sentry checks your website’s security and explains what it finds in plain English: one
             grade, what each problem means for your business, and what to fix first.
           </p>
-          <DomainForm onSubmit={setRequested} />
+          <DomainForm onSubmit={(domain) => scan.mutate(domain)} pending={scan.isPending} />
 
-          {requested && (
+          {scan.isError && (
             <div
-              role="status"
-              className="flex gap-3 rounded-lg border bg-primary-soft p-4 text-[0.9375rem]"
+              role="alert"
+              className="flex gap-3 rounded-lg border border-critical/30 bg-critical-soft p-4 text-[0.9375rem]"
             >
-              <Info className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
-              <p>
-                <strong className="font-semibold">{requested}</strong> looks like a valid domain.
-                The scanner is being built next. Soon this button will check its secure connection,
-                browser protections and exposed files, then show your grade.
-              </p>
+              <AlertCircle className="mt-0.5 size-5 shrink-0 text-critical" aria-hidden="true" />
+              <p>{scan.error.message}</p>
             </div>
           )}
         </section>
+
+        {scan.data && (
+          <div ref={reportRef} className="scroll-mt-6">
+            <ScanReport report={scan.data} />
+          </div>
+        )}
 
         <section aria-labelledby="checks-h" className="flex flex-col gap-6">
           <h2 id="checks-h" className="font-display text-2xl font-bold tracking-tight">
             What Sentry checks
           </h2>
           <div className="grid gap-4 sm:grid-cols-3">
-            {CHECKS.map(({ Icon, title, body }) => (
+            {CHECKS.map(({ Icon, title, body, comingNext }) => (
               <article key={title} className="flex flex-col gap-3 rounded-lg border bg-card p-5">
-                <span className="grid size-10 place-items-center rounded-md bg-primary-soft text-primary">
-                  <Icon className="size-5" aria-hidden="true" />
-                </span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="grid size-10 place-items-center rounded-md bg-primary-soft text-primary">
+                    <Icon className="size-5" aria-hidden="true" />
+                  </span>
+                  {comingNext && (
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                      Coming next
+                    </span>
+                  )}
+                </div>
                 <h3 className="font-semibold">{title}</h3>
                 <p className="text-[0.9375rem] text-muted-foreground">{body}</p>
               </article>

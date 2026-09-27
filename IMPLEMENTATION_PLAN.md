@@ -70,6 +70,8 @@ Every choice is the strongest **free, open-source** option for its job and runs 
 > - [ ] Add `DATABASE_URL` to `.env.example` and the zod env validation (and `BETTER_AUTH_SECRET`, needed by Phase 1 auth).
 > - [ ] Extend `GET /api/health` to report `db: "ok"` by running a real query, and update its test.
 > - [ ] Add `db:*` npm scripts (`db:create`, `db:generate`, `db:migrate`, `db:studio`) and document them in the README.
+>
+> **Pulled forward for the prototype demo** (from Phases 2, 3 and 5, no database needed): `POST /api/scan` running the SSRF guard (checked at connect time), HTTPS/certificate checks, the HTTP→HTTPS redirect check and the six header checks; the plain-English catalog and scoring for those checks; and the report UI (grade card, findings by severity, "What passed"). Still to do in those phases: the exposed-path probe, the TLS legacy-protocol check, saving scans, and the async job queue.
 
 ---
 
