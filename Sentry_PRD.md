@@ -91,6 +91,28 @@ There is no low-cost, low-friction tool that tells a non-technical business owne
 - **Auth:** JWT in httpOnly cookies, bcrypt password hashing (matches prior project patterns)
 - **Scheduled re-scans:** cron job or scheduled task triggering re-scans and diffing against the last result
 
+> **Note — Tech stack update (2026-09-27): best free resources, local-only for now**
+>
+> Every tool below is free and open source and runs locally, with no cloud accounts, API keys or paid tiers. Full details are in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+>
+> | Layer | Final choice | Changed from the suggestion above |
+> |---|---|---|
+> | Language | **TypeScript** (client and server; Node 24 runs `.ts` directly) | Not specified before |
+> | Frontend | **React 19 + Vite**, React Router, TanStack Query, React Hook Form + zod | Same base, libraries added |
+> | UI | **Tailwind CSS v4 + shadcn/ui**, lucide-react icons, Recharts | Not specified before |
+> | Backend | **Node 24 + Express 5**, zod, helmet, pino | Unchanged |
+> | Database | **PostgreSQL 18** (local install) + **Drizzle ORM** / drizzle-kit migrations | ORM added |
+> | Auth | **Better Auth** (self-hosted library), email + password, **database-backed sessions in httpOnly cookies** | Replaces hand-built JWT + bcrypt. Sessions can be revoked instantly; a JWT stays valid until it expires |
+> | Background jobs & scheduled re-scans | **pg-boss** (job queue stored in Postgres) | Replaces a plain cron job. Jobs survive restarts and retry on failure, with no Redis |
+> | SSL/TLS scanning | Node's built-in **`tls`**, `dns`, `fetch` | Replaces `sslyze`, removing the Python dependency |
+> | Report translation | **Templated copy** per finding type | Unchanged; open question on AI generation resolved as templated |
+> | File storage | **Local disk** behind a storage module | Not specified before; swappable for Cloudflare R2 later |
+> | Email | **Nodemailer → Mailpit** (local inbox), **React Email** templates | Not specified before |
+> | PDF export | **@react-pdf/renderer** | Not specified before |
+> | Testing | **Vitest**, Supertest, **Playwright** | Not specified before |
+>
+> **Deferred until the app goes online:** hosting, managed Postgres, CI, a real email provider (e.g. Resend free tier) and cloud file storage.
+
 ---
 
 ## 8. Risk Scoring Model (proposed)
