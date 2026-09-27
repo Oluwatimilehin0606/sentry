@@ -50,7 +50,31 @@ See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the full stack rational
 
 ## Getting Started
 
-_Project scaffold coming soon._
+**Requirements:** Node.js 24+ and npm 11+. (PostgreSQL 18 is needed from Phase 1 onwards.)
+
+```bash
+git clone https://github.com/Oluwatimilehin0606/sentry.git
+cd sentry
+npm install
+npm run dev
+```
+
+Then open **http://localhost:5173**. The API runs on http://localhost:4000 (health check: `/api/health`), and the web app proxies `/api` to it. Copying `.env.example` to `.env` is optional for now; the defaults work.
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Starts the web app and API together |
+| `npm test` | Runs the API tests |
+| `npm run lint` | Checks code style |
+| `npm run typecheck` | Type-checks client and server |
+| `npm run build` | Builds the web app for production |
+
+### Project layout
+
+```
+client/   React 19 + Vite + Tailwind v4 + shadcn/ui (the website)
+server/   Node 24 + Express 5 (the API)
+```
 
 ## Legal & Ethical Guardrails
 

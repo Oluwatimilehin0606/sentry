@@ -63,9 +63,20 @@ Every choice is the strongest **free, open-source** option for its job and runs 
 
 ---
 
+> **Phase 0 status (2026-09-27): delivered as a "light" Phase 0** for the AI Foundry prototype submission (one working local page, no database required). The following Phase 0 items were **deferred and moved to the start of Phase 1** — they must be done before any Phase 1 work:
+>
+> - [ ] Create a dedicated `sentry` Postgres role (user runs one command and chooses the password) and the `sentry_dev` / `sentry_test` databases (`npm run db:create`).
+> - [ ] Install and wire up Drizzle ORM + drizzle-kit (`drizzle.config.ts`, `server/src/db/` client module, empty schema, migration scripts).
+> - [ ] Add `DATABASE_URL` to `.env.example` and the zod env validation (and `BETTER_AUTH_SECRET`, needed by Phase 1 auth).
+> - [ ] Extend `GET /api/health` to report `db: "ok"` by running a real query, and update its test.
+> - [ ] Add `db:*` npm scripts (`db:create`, `db:generate`, `db:migrate`, `db:studio`) and document them in the README.
+
+---
+
 ## Phase 1 — Database Schema & Authentication (Days 3–5)
 
 **Work**
+- **First, finish the deferred Phase 0 database items listed above.**
 - Drizzle schema + migrations. Better Auth generates its own `user`, `session`, `account` and `verification` tables; Sentry's tables reference `user.id`:
 
   ```

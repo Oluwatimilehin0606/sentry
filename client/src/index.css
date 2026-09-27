@@ -1,0 +1,154 @@
+@import 'tailwindcss';
+
+/* Dark mode follows the OS by default; a `.dark` class on <html> forces it. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------- Tokens (from design.html) ---------- */
+:root {
+  --background: #f5f7fa;
+  --foreground: #111a2b;
+  --card: #ffffff;
+  --card-foreground: #111a2b;
+  --popover: #ffffff;
+  --popover-foreground: #111a2b;
+  --primary: #1f5fad;
+  --primary-hover: #184d8f;
+  --primary-foreground: #ffffff;
+  --primary-soft: #e3edf9;
+  --secondary: #edf1f6;
+  --secondary-foreground: #111a2b;
+  --muted: #edf1f6;
+  --muted-foreground: #56637a;
+  --subtle-foreground: #717d92;
+  --accent: #edf1f6;
+  --accent-foreground: #111a2b;
+  --destructive: #c2322c;
+  --destructive-foreground: #ffffff;
+  --border: #d9e0ea;
+  --input: #b7c2d2;
+  --ring: #1f5fad;
+  --radius: 0.5rem;
+
+  --critical: #c2322c;
+  --critical-soft: #fbe9e8;
+  --medium: #a86400;
+  --medium-soft: #fdf1dd;
+  --low: #5e6b7e;
+  --low-soft: #eceff3;
+  --pass: #1d7f47;
+  --pass-soft: #e3f4ea;
+
+  --grade-a: #1d7f47;
+  --grade-b: #4e8a25;
+  --grade-c: #9a7300;
+  --grade-d: #c0571a;
+  --grade-f: #c2322c;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #0b111c;
+  --foreground: #e6ebf3;
+  --card: #121a28;
+  --card-foreground: #e6ebf3;
+  --popover: #121a28;
+  --popover-foreground: #e6ebf3;
+  --primary: #6ea2ee;
+  --primary-hover: #8db6f2;
+  --primary-foreground: #0b111c;
+  --primary-soft: #16294a;
+  --secondary: #1a2436;
+  --secondary-foreground: #e6ebf3;
+  --muted: #1a2436;
+  --muted-foreground: #9eaabd;
+  --subtle-foreground: #7e8ba1;
+  --accent: #1a2436;
+  --accent-foreground: #e6ebf3;
+  --destructive: #f0716a;
+  --destructive-foreground: #1a0b0b;
+  --border: #243148;
+  --input: #37465f;
+  --ring: #6ea2ee;
+
+  --critical: #f0716a;
+  --critical-soft: #3a1818;
+  --medium: #f0a63a;
+  --medium-soft: #372a12;
+  --low: #a3afc2;
+  --low-soft: #222c3c;
+  --pass: #4cc784;
+  --pass-soft: #12301f;
+
+  --grade-a: #4cc784;
+  --grade-b: #93c85a;
+  --grade-c: #e5bf3a;
+  --grade-d: #ee9150;
+  --grade-f: #f0716a;
+}
+
+@theme inline {
+  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-sans: 'Public Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-critical: var(--critical);
+  --color-critical-soft: var(--critical-soft);
+  --color-medium: var(--medium);
+  --color-medium-soft: var(--medium-soft);
+  --color-low: var(--low);
+  --color-low-soft: var(--low-soft);
+  --color-pass: var(--pass);
+  --color-pass-soft: var(--pass-soft);
+
+  --color-grade-a: var(--grade-a);
+  --color-grade-b: var(--grade-b);
+  --color-grade-c: var(--grade-c);
+  --color-grade-d: var(--grade-d);
+  --color-grade-f: var(--grade-f);
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    line-height: 1.55;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+}

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+server/storage/
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.claude/
