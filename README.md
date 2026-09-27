@@ -25,11 +25,15 @@ SMEs are prime targets for opportunistic cyberattacks (phishing, ransomware, cre
 
 ## Tech Stack
 
-- **Frontend:** React (Vite)
-- **Backend:** Node.js / Express API
-- **Database:** PostgreSQL — users, scan history, findings
-- **Scanning:** SSL/TLS checks, HTTP header checks (CSP, HSTS, X-Frame-Options, etc.), and a rate-limited curated wordlist probe for exposed paths
-- **Auth:** JWT in httpOnly cookies, bcrypt password hashing
+Everything is free, open source and runs locally. Full details are in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+
+- **Language:** TypeScript on client and server
+- **Frontend:** React 19 (Vite), Tailwind CSS v4, shadcn/ui
+- **Backend:** Node.js / Express 5 API, zod, helmet, pino
+- **Database:** PostgreSQL + Drizzle ORM — users, scan history, findings
+- **Scanning:** Node built-ins (`tls`, `dns`, `fetch`) for SSL/TLS checks, HTTP header checks (CSP, HSTS, X-Frame-Options, etc.), and a rate-limited curated wordlist probe for exposed paths
+- **Auth:** Better Auth — email + password, database-backed sessions in httpOnly cookies (revocable instantly, unlike a JWT)
+- **Background jobs:** pg-boss (job queue stored in Postgres) for scans and scheduled re-scans
 
 ## Getting Started
 
