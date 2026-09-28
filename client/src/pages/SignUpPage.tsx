@@ -40,7 +40,7 @@ export function SignUpPage() {
     defaultValues: { name: '', email: '', password: '', acceptTerms: false as unknown as true },
   });
 
-  if (session) return <Navigate to="/account" replace />;
+  if (session) return <Navigate to="/home" replace />;
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
@@ -55,7 +55,7 @@ export function SignUpPage() {
       setFormError(authErrorMessage(error));
       return;
     }
-    navigate('/account', { replace: true });
+    navigate('/home', { replace: true });
   });
 
   return (

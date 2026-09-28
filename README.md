@@ -30,6 +30,13 @@ What works today, at http://localhost:5173 after `npm run dev`:
 - Protected pages and API routes (`/account`, `/api/me`), with sign-in redirecting back to where you were going.
 - 47 automated tests, run against a separate test database.
 
+**Landing page (28 Sep 2026).**
+
+- Public landing page at `/`: hero with an example report, a "plain English, not jargon" comparison, how it works, what Sentry checks, safety, and a final call to action. Anyone can read it.
+- Checking a website needs an account: the scanner lives at `/home` (signed in only), sign-up and sign-in land there, and the API refuses scans from signed-out visitors.
+- Lighthouse on the production build: desktop 100 / 100 / 100 / 100; phone 100 for accessibility, best practices and SEO, and 86–98 for performance.
+- Self-hosted fonts (no Google Fonts requests), pages load on demand, `robots.txt`, link-preview tags.
+
 **Next up (see [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)):**
 
 1. **Phase 2:** complete the scanner: exposed-file checks (`.env`, `.git`, backups) and TLS protocol checks.

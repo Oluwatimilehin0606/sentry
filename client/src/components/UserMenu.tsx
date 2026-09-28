@@ -34,8 +34,9 @@ export function UserMenu() {
         variant="ghost"
         size="sm"
         onClick={async () => {
+          // Leave the protected page first; otherwise it sees the session end and sends us to sign-in.
+          navigate('/', { replace: true, state: { signedOut: true } });
           await signOut();
-          navigate('/');
         }}
       >
         <LogOut aria-hidden="true" />

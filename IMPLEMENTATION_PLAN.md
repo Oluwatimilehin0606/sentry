@@ -197,7 +197,7 @@ The core of the product. Built as a **standalone library** in `server/src/scanne
 - Per-user scan limit (e.g. 10 manual scans/day).
 - pg-boss job timeout (2 min) marks hung scans as `failed`; jobs queued before a restart still run afterwards.
 - Client:
-  - **Landing page layout (deferred from the 2026-09-27 prototype):** the hero only fills the left side of a centered column, leaving empty space on wide screens. Make it two columns: headline + domain form on the left, a clearly labelled **example report card** (grade, score bar, severity pills, one finding) on the right; stacks under the form on phones.
+  - ~~**Landing page layout (deferred from the 2026-09-27 prototype)**~~ **Done 2026-09-28:** public landing page at `/` (two-column hero with example report card, plain-English comparison, how it works, checks, safety, CTA), built from the approved mockup (https://claude.ai/artifact/7P9Pw3amPMSG6rCrYo9NP6). The scanner moved to `/home` behind sign-in and `POST /api/scan` now requires a session (rate-limited per user). Lighthouse on the production build: desktop 100/100/100/100, phone 100 for A11y/BP/SEO and 86–98 for performance. Still open: the header wraps at phone width on signed-in pages; the phone performance score has room to improve (inline critical CSS, trim the ~56 KiB of unused JS in the main bundle, host with Brotli compression); `og:image` and `og:url` need to be added at deployment.
   - "Run Scan" button → progress state (polls every 2s).
   - **Report page:** large grade/score card with summary line; findings grouped Critical → Medium → Low, each expandable into *What it is / Why it matters / How to fix*; a collapsed "What passed" section.
 

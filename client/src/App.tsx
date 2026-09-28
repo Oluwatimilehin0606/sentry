@@ -1,26 +1,42 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router';
-import { Layout } from '@/components/Layout';
+import { AppLayout } from '@/components/AppLayout';
+import { PublicLayout } from '@/components/PublicLayout';
 import { RequireAuth } from '@/components/RequireAuth';
-import { AccountPage } from '@/pages/AccountPage';
-import { HomePage } from '@/pages/HomePage';
-import { NotFoundPage } from '@/pages/NotFoundPage';
-import { SignInPage } from '@/pages/SignInPage';
-import { SignUpPage } from '@/pages/SignUpPage';
+import { LandingPage } from '@/pages/LandingPage';
+
+// The landing page ships in the main bundle; everything else loads only when visited.
+const HomePage = lazy(() => import('@/pages/HomePage').then((m) => ({ default: m.HomePage })));
+const AccountPage = lazy(() => import('@/pages/AccountPage').then((m) => ({ default: m.AccountPage })));
+const SignInPage = lazy(() => import('@/pages/SignInPage').then((m) => ({ default: m.SignInPage })));
+const SignUpPage = lazy(() => import('@/pages/SignUpPage').then((m) => ({ default: m.SignUpPage })));
+const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
 
 export function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route index element={<HomePage />} />
-          <Route path="sign-in" element={<SignInPage />} />
-          <Route path="sign-up" element={<SignUpPage />} />
-          <Route element={<RequireAuth />}>
-            <Route path="account" element={<AccountPage />} />
+      <Suspense fallback={<div className="min-h-screen bg-background" aria-busy="true" />}>
+        <Routes>
+          {/* Anyone can see these. */}
+          <Route element={<PublicLayout />}>
+            <Route index element={<LandingPage />} />
+            <Route path="sign-in" element={<SignInPage />} />
+            <Route path="sign-up" element={<SignUpPage />} />
           </Route>
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
-      </Routes>
+
+          {/* Using Sentry needs an account. */}
+          <Route element={<RequireAuth />}>
+            <Route element={<AppLayout />}>
+              <Route path="home" element={<HomePage />} />
+              <Route path="account" element={<AccountPage />} />
+            </Route>
+          </Route>
+
+          <Route element={<PublicLayout />}>
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

@@ -1,18 +1,23 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
+import { requireAuth } from '../middleware/require-auth.ts';
 import { normalizeHostname } from '../scanner/domain.ts';
 import { scanHost } from '../scanner/scan.ts';
 import { ScanTargetError } from '../scanner/target.ts';
 
 export const scanRouter = Router();
 
+// Scanning is a signed-in feature: visitors can read about Sentry, but only account holders scan.
+scanRouter.use(requireAuth);
 scanRouter.use(
   rateLimit({
     windowMs: 60_000,
     limit: 10,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
+    // Limit per account, not per IP, now that every scan has a signed-in user.
+    keyGenerator: (_req, res) => `user:${res.locals.user!.id}`,
     message: { error: 'Too many scans in a short time. Please wait a minute and try again.' },
   }),
 );

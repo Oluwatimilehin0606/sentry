@@ -69,11 +69,11 @@ export function AccountPage() {
             <p className="font-semibold">Saving and monitoring websites is coming next</p>
             <p className="text-[0.9375rem] text-muted-foreground">
               Soon you’ll add your websites here, prove you own them, and see their grade over time. For
-              now, you can run a one-off check from the home page.
+              now, you can run a one-off check from your home page.
             </p>
           </div>
           <Button asChild>
-            <Link to="/">
+            <Link to="/home">
               <Search aria-hidden="true" />
               Check a website
             </Link>

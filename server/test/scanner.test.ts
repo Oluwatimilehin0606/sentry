@@ -1,11 +1,13 @@
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.ts';
+import { pool } from '../src/db/client.ts';
 import { CATALOG } from '../src/scanner/catalog.ts';
 import { evaluateCertificate, evaluateHeaders, evaluateTlsError, type Finding } from '../src/scanner/checks.ts';
 import { normalizeHostname } from '../src/scanner/domain.ts';
 import { scoreFindings } from '../src/scanner/score.ts';
 import { assertPublicHost, isBlockedAddress } from '../src/scanner/target.ts';
+import { resetDatabase, signedInAgent } from './helpers.ts';
 
 describe('SSRF guard', () => {
   it.each([
@@ -124,14 +126,32 @@ describe('catalog', () => {
 });
 
 describe('POST /api/scan', () => {
+  const app = createApp();
+  let agent: Awaited<ReturnType<typeof signedInAgent>>;
+
+  beforeAll(async () => {
+    await resetDatabase();
+    agent = await signedInAgent(app);
+  });
+
+  afterAll(async () => {
+    await pool.end();
+  });
+
+  it('requires signing in', async () => {
+    const res = await request(app).post('/api/scan').send({ domain: 'example.com' });
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe('Please sign in to continue.');
+  });
+
   it('rejects invalid domains without scanning', async () => {
-    const res = await request(createApp()).post('/api/scan').send({ domain: 'https://example.com/menu' });
+    const res = await agent.post('/api/scan').send({ domain: 'https://example.com/menu' });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/valid domain/);
   });
 
   it('refuses to scan private addresses', async () => {
-    const res = await request(createApp()).post('/api/scan').send({ domain: 'localhost.' });
+    const res = await agent.post('/api/scan').send({ domain: 'localhost.' });
     expect(res.status).toBe(400);
   });
 });

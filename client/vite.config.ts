@@ -10,6 +10,10 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  build: {
+    // The repo is public, so shipping source maps exposes nothing new and makes errors traceable.
+    sourcemap: true,
+  },
   server: {
     port: 5173,
     proxy: {

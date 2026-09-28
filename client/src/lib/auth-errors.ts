@@ -24,5 +24,5 @@ export function authErrorMessage(error: AuthError): string {
 
 /** Only allow redirects back into this app (never to another site). */
 export function safeNextPath(next: string | null): string {
-  return next && next.startsWith('/') && !next.startsWith('//') ? next : '/account';
+  return next && next.startsWith('/') && !next.startsWith('//') ? next : '/home';
 }

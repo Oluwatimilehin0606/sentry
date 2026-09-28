@@ -31,11 +31,12 @@
 
   --critical: #c2322c;
   --critical-soft: #fbe9e8;
-  --medium: #a86400;
+  /* Darkened from the first design pass so small labels on their soft tints meet WCAG AA (4.5:1). */
+  --medium: #8a5200;
   --medium-soft: #fdf1dd;
-  --low: #5e6b7e;
+  --low: #56627a;
   --low-soft: #eceff3;
-  --pass: #1d7f47;
+  --pass: #17703e;
   --pass-soft: #e3f4ea;
 
   --grade-a: #1d7f47;
@@ -43,6 +44,10 @@
   --grade-c: #9a7300;
   --grade-d: #c0571a;
   --grade-f: #c2322c;
+
+  --band: #10284a;
+  --on-band: #ffffff;
+  --on-band-muted: #c3d2e8;
 }
 
 .dark {
@@ -84,11 +89,15 @@
   --grade-c: #e5bf3a;
   --grade-d: #ee9150;
   --grade-f: #f0716a;
+
+  --band: #16294a;
+  --on-band: #e6ebf3;
+  --on-band-muted: #9eb4d6;
 }
 
 @theme inline {
-  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
-  --font-sans: 'Public Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-display: 'Bricolage Grotesque Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-sans: 'Public Sans Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
 
   --color-background: var(--background);
@@ -129,6 +138,10 @@
   --color-grade-d: var(--grade-d);
   --color-grade-f: var(--grade-f);
 
+  --color-band: var(--band);
+  --color-on-band: var(--on-band);
+  --color-on-band-muted: var(--on-band-muted);
+
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 4px);
@@ -141,6 +154,12 @@
   }
   html {
     -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
   body {
     @apply bg-background text-foreground font-sans;

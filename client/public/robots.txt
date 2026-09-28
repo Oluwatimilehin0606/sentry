@@ -1,0 +1,6 @@
+# The public landing page can be indexed; signed-in pages can't.
+User-agent: *
+Allow: /
+Disallow: /home
+Disallow: /account
+Disallow: /api/
