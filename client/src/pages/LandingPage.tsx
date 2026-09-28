@@ -10,9 +10,10 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { Link, Navigate, useLocation } from 'react-router';
 import { ExampleReport } from '@/components/landing/ExampleReport';
+import { PulseLine } from '@/components/landing/PulseLine';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/lib/auth-client';
 import { useScrollReveal } from '@/lib/motion';
@@ -349,6 +350,7 @@ export function LandingPage() {
   // Set by "Sign out": stay here while the session is being ended instead of bouncing to /home.
   const signingOut = (state as { signedOut?: boolean } | null)?.signedOut === true;
   const showLanding = !(!isPending && session && !signingOut);
+  const pageRef = useRef<HTMLDivElement>(null);
 
   useScrollReveal([showLanding]);
 
@@ -361,13 +363,15 @@ export function LandingPage() {
   if (!showLanding) return <Navigate to="/home" replace />;
 
   return (
-    <>
+    // Sections must stay direct children: the heartbeat line places its beats at their boundaries.
+    <div ref={pageRef} className="relative overflow-x-clip">
+      <PulseLine containerRef={pageRef} />
       <Hero />
       <PlainEnglish />
       <HowItWorks />
       <WhatWeCheck />
       <Safety />
       <FinalCta />
-    </>
+    </div>
   );
 }
