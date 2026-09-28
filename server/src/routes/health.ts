@@ -1,8 +1,13 @@
 import { Router } from 'express';
+import { isDatabaseUp } from '../db/client.ts';
 
 export const healthRouter = Router();
 
-healthRouter.get('/', (_req, res) => {
-  // The database check is added in Phase 1, once Postgres is wired up.
-  res.json({ status: 'ok', uptime: Math.round(process.uptime()) });
+healthRouter.get('/', async (_req, res) => {
+  const dbUp = await isDatabaseUp();
+  res.status(dbUp ? 200 : 503).json({
+    status: dbUp ? 'ok' : 'degraded',
+    db: dbUp ? 'ok' : 'unreachable',
+    uptime: Math.round(process.uptime()),
+  });
 });

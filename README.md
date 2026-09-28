@@ -67,7 +67,7 @@ See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the full stack rational
 
 ## Getting Started
 
-**Requirements:** Node.js 24+ and npm 11+. (PostgreSQL 18 is needed from Phase 1 onwards.)
+**Requirements:** Node.js 24+, npm 11+ and PostgreSQL 18.
 
 ```bash
 git clone https://github.com/Oluwatimilehin0606/sentry.git
@@ -76,7 +76,22 @@ npm install
 npm run dev
 ```
 
-Then open **http://localhost:5173**. The API runs on http://localhost:4000 (health check: `/api/health`), and the web app proxies `/api` to it. Copying `.env.example` to `.env` is optional for now; the defaults work.
+Then open **http://localhost:5173**. The API runs on http://localhost:4000 (health check: `/api/health`), and the web app proxies `/api` to it.
+
+### Database setup (one time)
+
+Sentry needs PostgreSQL 18 running locally.
+
+1. Copy `.env.example` to `.env` and set `BETTER_AUTH_SECRET` (the file shows how to generate one).
+2. Create a `sentry` database user, choosing your own password (letters and numbers only). You'll be asked for your `postgres` superuser password:
+   ```bash
+   psql -U postgres -h localhost -c "CREATE ROLE sentry WITH LOGIN CREATEDB PASSWORD 'your-password-here';"
+   ```
+3. Put the same password into `DATABASE_URL` in `.env` (replace `CHANGE_ME`).
+4. Create the `sentry_dev` and `sentry_test` databases:
+   ```bash
+   npm run db:create
+   ```
 
 | Command | What it does |
 |---|---|
@@ -85,6 +100,10 @@ Then open **http://localhost:5173**. The API runs on http://localhost:4000 (heal
 | `npm run lint` | Checks code style |
 | `npm run typecheck` | Type-checks client and server |
 | `npm run build` | Builds the web app for production |
+| `npm run db:create` | Creates the dev and test databases (safe to re-run) |
+| `npm run db:generate` | Generates a migration from schema changes |
+| `npm run db:migrate` | Applies migrations to the dev database |
+| `npm run db:studio` | Opens Drizzle Studio to browse the data |
 
 ### Project layout
 

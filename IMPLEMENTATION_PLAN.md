@@ -65,11 +65,13 @@ Every choice is the strongest **free, open-source** option for its job and runs 
 
 > **Phase 0 status (2026-09-27): delivered as a "light" Phase 0** for the AI Foundry prototype submission (one working local page, no database required). The following Phase 0 items were **deferred and moved to the start of Phase 1** — they must be done before any Phase 1 work:
 >
-> - [ ] Create a dedicated `sentry` Postgres role (user runs one command and chooses the password) and the `sentry_dev` / `sentry_test` databases (`npm run db:create`).
-> - [ ] Install and wire up Drizzle ORM + drizzle-kit (`drizzle.config.ts`, `server/src/db/` client module, empty schema, migration scripts).
-> - [ ] Add `DATABASE_URL` to `.env.example` and the zod env validation (and `BETTER_AUTH_SECRET`, needed by Phase 1 auth).
-> - [ ] Extend `GET /api/health` to report `db: "ok"` by running a real query, and update its test.
-> - [ ] Add `db:*` npm scripts (`db:create`, `db:generate`, `db:migrate`, `db:studio`) and document them in the README.
+> - [x] Create a dedicated `sentry` Postgres role (user runs one command and chooses the password) and the `sentry_dev` / `sentry_test` databases (`npm run db:create`).
+> - [x] Install and wire up Drizzle ORM + drizzle-kit (`drizzle.config.ts`, `server/src/db/` client module, empty schema, migration scripts).
+> - [x] Add `DATABASE_URL` to `.env.example` and the zod env validation (and `BETTER_AUTH_SECRET`, needed by Phase 1 auth).
+> - [x] Extend `GET /api/health` to report `db: "ok"` by running a real query, and update its test.
+> - [x] Add `db:*` npm scripts (`db:create`, `db:generate`, `db:migrate`, `db:studio`) and document them in the README.
+>
+> **All deferred items completed on 2026-09-28** (PostgreSQL 18.4, tests run against `sentry_test`).
 >
 > **Pulled forward for the prototype demo** (from Phases 2, 3 and 5, no database needed): `POST /api/scan` running the SSRF guard (checked at connect time), HTTPS/certificate checks, the HTTP→HTTPS redirect check and the six header checks; the plain-English catalog and scoring for those checks; and the report UI (grade card, findings by severity, "What passed"). Still to do in those phases: the exposed-path probe, the TLS legacy-protocol check, saving scans, and the async job queue.
 

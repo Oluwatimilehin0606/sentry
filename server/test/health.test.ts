@@ -1,13 +1,18 @@
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.ts';
+import { pool } from '../src/db/client.ts';
+
+afterAll(async () => {
+  await pool.end();
+});
 
 describe('GET /api/health', () => {
-  it('reports the API is up', async () => {
+  it('reports the API and database are up', async () => {
     const res = await request(createApp()).get('/api/health');
 
     expect(res.status).toBe(200);
-    expect(res.body.status).toBe('ok');
+    expect(res.body).toMatchObject({ status: 'ok', db: 'ok' });
   });
 
   it('sends security headers', async () => {
