@@ -36,6 +36,7 @@ What works today, at http://localhost:5173 after `npm run dev`:
 - Checking a website needs an account: the scanner lives at `/home` (signed in only), sign-up and sign-in land there, and the API refuses scans from signed-out visitors.
 - Lighthouse on the production build: desktop 100 / 100 / 100 / 100; phone 100 for accessibility, best practices and SEO, and 86–98 for performance.
 - Self-hosted fonts (no Google Fonts requests), pages load on demand, `robots.txt`, link-preview tags.
+- Motion: the example report plays out like a live scan (checks tick off, score counts up to 72, grade and findings appear, "Run again" to replay); sections fade up on scroll; "How it works" draws a line through steps 1 → 2 → 3; a before → after reveal for the plain-English comparison; subtle hover effects. No animation library, and anyone with "reduce motion" switched on gets the static page.
 
 **Next up (see [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)):**
 

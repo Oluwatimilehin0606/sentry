@@ -24,7 +24,7 @@ export function PublicLayout() {
           </Link>
           <nav aria-label="Main" className="hidden items-center gap-8 text-[0.9375rem] font-medium md:flex">
             {NAV.map((item) => (
-              <Link key={item.href} to={item.href} className="text-muted-foreground transition-colors hover:text-foreground">
+              <Link key={item.href} to={item.href} className="link-underline pb-0.5 text-muted-foreground hover:text-foreground">
                 {item.label}
               </Link>
             ))}

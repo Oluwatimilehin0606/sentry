@@ -1,5 +1,6 @@
 import {
   Activity,
+  ArrowDown,
   ArrowRight,
   Check,
   EyeOff,
@@ -9,10 +10,12 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, type CSSProperties, type ReactNode } from 'react';
 import { Link, Navigate, useLocation } from 'react-router';
+import { ExampleReport } from '@/components/landing/ExampleReport';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/lib/auth-client';
+import { useScrollReveal } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 /* ---------- Small building blocks ---------- */
@@ -25,9 +28,12 @@ function Eyebrow({ children }: { children: ReactNode }) {
   return <span className="text-xs font-semibold tracking-[0.08em] text-primary uppercase sm:text-[0.8125rem]">{children}</span>;
 }
 
+/** Stagger delay for the nth item in a revealed group. */
+const delay = (i: number, stepMs = 90): CSSProperties => ({ '--delay': `${i * stepMs}ms` }) as CSSProperties;
+
 function SectionHeading({ eyebrow, title, id, children }: { eyebrow: string; title: string; id: string; children?: ReactNode }) {
   return (
-    <div className="flex max-w-3xl flex-col gap-3">
+    <div data-reveal className="reveal flex max-w-3xl flex-col gap-3">
       <Eyebrow>{eyebrow}</Eyebrow>
       <h2 id={id} className="font-display text-[2rem] leading-[1.12] font-bold tracking-tight sm:text-[2.75rem] sm:leading-[1.1]">
         {title}
@@ -37,14 +43,9 @@ function SectionHeading({ eyebrow, title, id, children }: { eyebrow: string; tit
   );
 }
 
-function Pill({ className, children }: { className: string; children: ReactNode }) {
-  return (
-    <span className={cn('inline-flex h-6.5 items-center gap-1.5 rounded-full px-2.5 text-[0.8125rem] font-semibold', className)}>
-      <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
-      {children}
-    </span>
-  );
-}
+/** Lifts slightly on hover. Kept on an inner element so it doesn't fight the reveal transition. */
+const hoverLift =
+  'transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgb(17_26_43/0.05),0_10px_24px_rgb(17_26_43/0.08)]';
 
 /* ---------- Content ---------- */
 
@@ -61,6 +62,7 @@ const STEPS = [
     body: 'See your score out of 100, what each problem means for your business, and what to fix first.',
   },
 ];
+const STEP_MS = 450;
 
 const CHECKS: { Icon: LucideIcon; title: string; body: string; comingNext?: boolean }[] = [
   {
@@ -101,62 +103,6 @@ const SAFETY: { Icon: LucideIcon; title: string; body: string }[] = [
 
 /* ---------- Sections ---------- */
 
-function ExampleReport() {
-  return (
-    <figure
-      aria-label="Example report"
-      className="m-0 flex flex-col gap-4 rounded-2xl border bg-card p-5 shadow-[0_1px_2px_rgb(17_26_43/0.05),0_12px_32px_rgb(17_26_43/0.08)] sm:gap-4.5 sm:p-7"
-    >
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">Example report</span>
-        <span className="font-mono text-xs text-muted-foreground">took 0.9s</span>
-      </div>
-      <div className="flex items-center gap-4">
-        <div
-          aria-label="Grade C"
-          className="grid size-16 shrink-0 place-items-center rounded-[14px] border-[3px] border-grade-c font-display text-[2.375rem] leading-none font-bold text-grade-c sm:size-19 sm:text-[2.75rem]"
-        >
-          C
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <div className="font-display text-[1.875rem] leading-none font-bold tabular-nums sm:text-4xl">
-            72<span className="text-base font-medium text-muted-foreground"> / 100</span>
-          </div>
-          <div className="text-sm text-muted-foreground sm:text-[0.9375rem]">yourbakery.example</div>
-        </div>
-      </div>
-      <div role="img" aria-label="Score 72 out of 100" className="h-2 overflow-hidden rounded-full bg-muted">
-        <div className="h-full w-[72%] rounded-full bg-grade-c" />
-      </div>
-      <p className="text-[0.9375rem] sm:text-base">
-        Your site scored a C. 4 issues are putting you at risk. Fix the medium ones first.
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <Pill className="bg-medium-soft text-medium">2 medium</Pill>
-        <Pill className="bg-low-soft text-low">2 low</Pill>
-        <Pill className="bg-pass-soft text-pass">6 passed</Pill>
-      </div>
-      <div className="flex flex-col gap-2.5 pt-1">
-        <div className="flex flex-col gap-1.5 rounded-[10px] border border-l-4 border-l-medium p-3.5 sm:px-4">
-          <span className="text-xs font-semibold text-medium">MEDIUM</span>
-          <span className="text-[0.9375rem] leading-snug font-semibold">
-            Browsers aren’t told to always use a secure connection
-          </span>
-          <span className="text-sm text-muted-foreground">
-            On public Wi-Fi, an attacker can quietly move a visitor to the insecure version of your site.
-          </span>
-        </div>
-        <div className="hidden flex-col gap-1.5 rounded-[10px] border border-l-4 border-l-medium p-3.5 sm:flex sm:px-4">
-          <span className="text-xs font-semibold text-medium">MEDIUM</span>
-          <span className="text-[0.9375rem] leading-snug font-semibold">
-            Your site doesn’t limit where its content can come from
-          </span>
-        </div>
-      </div>
-    </figure>
-  );
-}
-
 function Hero() {
   return (
     <section aria-labelledby="hero-h">
@@ -174,10 +120,10 @@ function Hero() {
             problem means for your business, and what to fix first.
           </p>
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
-            <Button asChild size="lg" className="h-13 px-6.5 text-[1.0625rem]">
+            <Button asChild size="lg" className="group h-13 px-6.5 text-[1.0625rem]">
               <Link to="/sign-up">
                 Get started
-                <ArrowRight className="size-4.5" aria-hidden="true" />
+                <ArrowRight className="size-4.5 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="h-13 px-6 text-[1.0625rem]">
@@ -207,8 +153,10 @@ function PlainEnglish() {
           Most security scanners are built for experts. Sentry explains the same problem the way a knowledgeable friend
           would, and tells you exactly what to do about it.
         </SectionHeading>
-        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-          <div className="flex flex-col gap-4 rounded-[14px] border bg-background p-5 sm:p-7">
+
+        {/* Before → after: the jargon appears, the arrow pops, then Sentry's version slides in. */}
+        <div className="grid items-center gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-5">
+          <div data-reveal className="reveal flex h-full flex-col gap-4 rounded-[14px] border bg-background p-5 sm:p-7">
             <span className="text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase sm:text-[0.8125rem]">
               What a typical scanner says
             </span>
@@ -224,7 +172,22 @@ function PlainEnglish() {
               Accurate, but it doesn’t tell a business owner whether to worry or what to do.
             </p>
           </div>
-          <div className="flex flex-col gap-4 rounded-[14px] border-2 border-primary bg-card p-5 shadow-[0_1px_2px_rgb(17_26_43/0.05),0_12px_32px_rgb(17_26_43/0.08)] sm:p-7">
+
+          <div
+            data-reveal
+            style={{ '--delay': '350ms' } as CSSProperties}
+            className="reveal reveal-pop mx-auto grid size-10 place-items-center rounded-full bg-primary text-primary-foreground shadow-md"
+            aria-hidden="true"
+          >
+            <ArrowDown className="size-5 lg:hidden" />
+            <ArrowRight className="hidden size-5 lg:block" />
+          </div>
+
+          <div
+            data-reveal
+            style={{ '--delay': '600ms' } as CSSProperties}
+            className="reveal reveal-from-right flex h-full flex-col gap-4 rounded-[14px] border-2 border-primary bg-card p-5 shadow-[0_1px_2px_rgb(17_26_43/0.05),0_12px_32px_rgb(17_26_43/0.08)] sm:p-7"
+          >
             <span className="text-xs font-semibold tracking-[0.06em] text-primary uppercase sm:text-[0.8125rem]">
               What Sentry says
             </span>
@@ -259,16 +222,29 @@ function HowItWorks() {
     <section id="how" aria-labelledby="how-h" className="scroll-mt-4">
       <Container className="flex flex-col gap-8 py-16 sm:gap-12 sm:py-26">
         <SectionHeading eyebrow="How it works" title="From sign-up to your grade in three steps" id="how-h" />
-        <ol className="grid gap-3.5 sm:gap-6 lg:grid-cols-3">
+        {/* Numbers light up 1 → 2 → 3 while a line draws between them (down on phones, across on desktop). */}
+        <ol data-reveal className="steps grid gap-3.5 lg:grid-cols-3 lg:gap-6">
           {STEPS.map((step, i) => (
-            <li key={step.title} className="flex gap-4 rounded-[14px] border bg-card p-5 sm:p-7 lg:flex-col lg:gap-3.5">
+            <li
+              key={step.title}
+              className="relative grid grid-cols-[40px_minmax(0,1fr)] gap-4 lg:grid-cols-1 lg:grid-rows-[40px_1fr] lg:gap-5"
+            >
               <span
                 aria-hidden="true"
-                className="grid size-9 shrink-0 place-items-center rounded-full bg-primary font-display text-[1.0625rem] font-bold text-primary-foreground sm:size-10 sm:text-lg"
+                style={delay(i, STEP_MS)}
+                className="step-num relative z-10 grid size-10 place-items-center rounded-full bg-primary font-display text-lg font-bold text-primary-foreground"
               >
                 {i + 1}
               </span>
-              <div className="flex flex-col gap-1.5 lg:gap-3.5">
+              {i < STEPS.length - 1 && (
+                <span
+                  aria-hidden="true"
+                  className="absolute top-10 left-[19px] h-[calc(100%-40px+14px)] w-0.5 overflow-hidden rounded-full bg-border lg:top-[19px] lg:left-10 lg:h-0.5 lg:w-[calc(100%-40px+24px)]"
+                >
+                  <span style={{ '--delay': `${i * STEP_MS + 120}ms` } as CSSProperties} className="step-bar block size-full bg-primary" />
+                </span>
+              )}
+              <div className={cn('flex flex-col gap-1.5 rounded-[14px] border bg-card p-5 sm:p-7 lg:h-full lg:gap-3', hoverLift)}>
                 <h3 className="text-lg font-semibold sm:text-xl">{step.title}</h3>
                 <p className="text-[0.9375rem] text-muted-foreground sm:text-base">{step.body}</p>
               </div>
@@ -286,21 +262,23 @@ function WhatWeCheck() {
       <Container className="flex flex-col gap-8 py-16 sm:gap-12 sm:py-26">
         <SectionHeading eyebrow="What we check" title="The gaps attackers look for first" id="checks-h" />
         <div className="grid gap-3.5 sm:gap-6 lg:grid-cols-3">
-          {CHECKS.map(({ Icon, title, body, comingNext }) => (
-            <article key={title} className="flex flex-col gap-3 rounded-[14px] border bg-background p-5 sm:gap-3.5 sm:p-7">
-              <div className="flex items-center justify-between">
-                <span className="grid size-10 place-items-center rounded-[10px] bg-primary-soft text-primary sm:size-11">
-                  <Icon className="size-5 sm:size-5.5" aria-hidden="true" />
-                </span>
-                {comingNext && (
-                  <span className="rounded-full bg-muted px-2.5 py-1 text-[0.8125rem] font-semibold text-muted-foreground">
-                    Coming next
+          {CHECKS.map(({ Icon, title, body, comingNext }, i) => (
+            <div key={title} data-reveal style={delay(i)} className="reveal">
+              <article className={cn('flex h-full flex-col gap-3 rounded-[14px] border bg-background p-5 sm:gap-3.5 sm:p-7', hoverLift)}>
+                <div className="flex items-center justify-between">
+                  <span className="grid size-10 place-items-center rounded-[10px] bg-primary-soft text-primary sm:size-11">
+                    <Icon className="size-5 sm:size-5.5" aria-hidden="true" />
                   </span>
-                )}
-              </div>
-              <h3 className="text-lg font-semibold sm:text-xl">{title}</h3>
-              <p className="text-[0.9375rem] text-muted-foreground sm:text-base">{body}</p>
-            </article>
+                  {comingNext && (
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-[0.8125rem] font-semibold text-muted-foreground">
+                      Coming next
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-lg font-semibold sm:text-xl">{title}</h3>
+                <p className="text-[0.9375rem] text-muted-foreground sm:text-base">{body}</p>
+              </article>
+            </div>
           ))}
         </div>
       </Container>
@@ -312,15 +290,15 @@ function Safety() {
   return (
     <section id="safety" aria-labelledby="safety-h" className="scroll-mt-4">
       <Container className="grid gap-8 py-16 sm:py-24 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-18">
-        <div className="flex flex-col gap-3">
+        <div data-reveal className="reveal flex flex-col gap-3">
           <Eyebrow>Safety</Eyebrow>
           <h2 id="safety-h" className="font-display text-[2rem] leading-[1.12] font-bold tracking-tight sm:text-[2.5rem]">
             Built to be safe for your website
           </h2>
         </div>
         <div className="grid gap-6 sm:grid-cols-3 sm:gap-8">
-          {SAFETY.map(({ Icon, title, body }) => (
-            <div key={title} className="flex gap-3.5 sm:flex-col sm:gap-2.5">
+          {SAFETY.map(({ Icon, title, body }, i) => (
+            <div key={title} data-reveal style={delay(i, 110)} className="reveal flex gap-3.5 sm:flex-col sm:gap-2.5">
               <Icon className="size-6 shrink-0 text-primary" aria-hidden="true" />
               <div className="flex flex-col gap-1 sm:gap-2.5">
                 <h3 className="text-[1.0625rem] font-semibold sm:text-lg">{title}</h3>
@@ -338,7 +316,10 @@ function FinalCta() {
   return (
     <section aria-labelledby="cta-h">
       <Container className="pb-14 sm:pb-24">
-        <div className="flex flex-col gap-5 rounded-[18px] bg-band px-6 py-9 text-on-band sm:rounded-[20px] sm:px-16 sm:py-16 lg:flex-row lg:items-center lg:justify-between lg:gap-12">
+        <div
+          data-reveal
+          className="reveal flex flex-col gap-5 rounded-[18px] bg-band px-6 py-9 text-on-band sm:rounded-[20px] sm:px-16 sm:py-16 lg:flex-row lg:items-center lg:justify-between lg:gap-12"
+        >
           <div className="flex max-w-2xl flex-col gap-3">
             <h2 id="cta-h" className="font-display text-[1.875rem] leading-[1.12] font-bold sm:text-[2.75rem] sm:leading-[1.1] sm:tracking-tight">
               Find out your website’s grade
@@ -349,10 +330,10 @@ function FinalCta() {
           </div>
           <Link
             to="/sign-up"
-            className="inline-flex h-13 shrink-0 items-center justify-center gap-2.5 rounded-[10px] bg-on-band px-7.5 text-[1.0625rem] font-semibold text-band transition-opacity hover:opacity-90 focus-visible:ring-[3px] focus-visible:ring-on-band/50 focus-visible:outline-none sm:h-14 sm:text-lg"
+            className="group inline-flex h-13 shrink-0 items-center justify-center gap-2.5 rounded-[10px] bg-on-band px-7.5 text-[1.0625rem] font-semibold text-band transition-[opacity,translate] duration-200 hover:-translate-y-0.5 hover:opacity-95 focus-visible:ring-[3px] focus-visible:ring-on-band/50 focus-visible:outline-none sm:h-14 sm:text-lg"
           >
             Get started
-            <ArrowRight className="size-4.5" aria-hidden="true" />
+            <ArrowRight className="size-4.5 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
           </Link>
         </div>
       </Container>
@@ -367,6 +348,9 @@ export function LandingPage() {
   const { hash, state } = useLocation();
   // Set by "Sign out": stay here while the session is being ended instead of bouncing to /home.
   const signingOut = (state as { signedOut?: boolean } | null)?.signedOut === true;
+  const showLanding = !(!isPending && session && !signingOut);
+
+  useScrollReveal([showLanding]);
 
   // Links like /#how from other pages: scroll to the section once it exists.
   useEffect(() => {
@@ -374,7 +358,7 @@ export function LandingPage() {
     document.getElementById(hash.slice(1))?.scrollIntoView();
   }, [hash]);
 
-  if (!isPending && session && !signingOut) return <Navigate to="/home" replace />;
+  if (!showLanding) return <Navigate to="/home" replace />;
 
   return (
     <>

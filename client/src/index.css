@@ -171,3 +171,112 @@
     text-wrap: balance;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Motion                                                             */
+/* Hidden starting states only apply under html.js-motion (set in     */
+/* index.html), so without JS or with reduce-motion nothing is hidden. */
+/* Deliberately NOT in a cascade layer: unlayered rules beat Tailwind */
+/* utilities, so a starting state (e.g. dimmed step numbers) isn't    */
+/* overridden by the element's own bg-primary.                        */
+/* ------------------------------------------------------------------ */
+
+/* Scroll reveal: an element with data-reveal gets .is-visible when it enters the viewport. */
+.reveal {
+  transition:
+    opacity 0.6s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--delay, 0ms);
+}
+.js-motion .reveal:not(.is-visible) {
+  opacity: 0;
+  transform: translateY(16px);
+}
+.js-motion .reveal-pop:not(.is-visible) {
+  transform: scale(0.6);
+}
+@media (min-width: 64rem) {
+  .js-motion .reveal-from-right:not(.is-visible) {
+    transform: translateX(28px);
+  }
+}
+
+/* "How it works": numbers light up in turn while the connecting line draws between them. */
+.step-num {
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease;
+  transition-delay: var(--delay, 0ms);
+}
+.js-motion .steps:not(.is-visible) .step-num {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+}
+.step-bar {
+  transform-origin: top;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  transition-delay: var(--delay, 0ms);
+}
+.js-motion .steps:not(.is-visible) .step-bar {
+  transform: scaleY(0);
+}
+@media (min-width: 64rem) {
+  .step-bar {
+    transform-origin: left;
+  }
+  .js-motion .steps:not(.is-visible) .step-bar {
+    transform: scaleX(0);
+  }
+}
+
+/* Nav links: underline slides in on hover. */
+.link-underline {
+  background: linear-gradient(currentColor, currentColor) no-repeat left bottom / 0% 1.5px;
+  transition:
+    background-size 0.25s ease,
+    color 0.2s ease;
+}
+.link-underline:hover,
+.link-underline:focus-visible {
+  background-size: 100% 1.5px;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes check-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes soft-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Anyone who asks their device for less motion gets none. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+}
