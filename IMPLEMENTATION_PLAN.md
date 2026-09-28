@@ -191,6 +191,7 @@ The core of the product. Built as a **standalone library** in `server/src/scanne
 - Per-user scan limit (e.g. 10 manual scans/day).
 - pg-boss job timeout (2 min) marks hung scans as `failed`; jobs queued before a restart still run afterwards.
 - Client:
+  - **Landing page layout (deferred from the 2026-09-27 prototype):** the hero only fills the left side of a centered column, leaving empty space on wide screens. Make it two columns: headline + domain form on the left, a clearly labelled **example report card** (grade, score bar, severity pills, one finding) on the right; stacks under the form on phones.
   - "Run Scan" button → progress state (polls every 2s).
   - **Report page:** large grade/score card with summary line; findings grouped Critical → Medium → Low, each expandable into *What it is / Why it matters / How to fix*; a collapsed "What passed" section.
 
