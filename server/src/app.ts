@@ -1,8 +1,11 @@
+import { toNodeHandler } from 'better-auth/node';
 import express, { type ErrorRequestHandler } from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
+import { auth } from './auth.ts';
 import { logger } from './logger.ts';
 import { healthRouter } from './routes/health.ts';
+import { meRouter } from './routes/me.ts';
 import { scanRouter } from './routes/scan.ts';
 
 export function createApp() {
@@ -11,9 +14,14 @@ export function createApp() {
   app.disable('x-powered-by');
   app.use(helmet());
   app.use(pinoHttp({ logger }));
+
+  // Better Auth reads the raw request body itself, so it must come before express.json().
+  app.all('/api/auth/{*any}', toNodeHandler(auth));
+
   app.use(express.json({ limit: '10kb' }));
 
   app.use('/api/health', healthRouter);
+  app.use('/api/me', meRouter);
   app.use('/api/scan', scanRouter);
 
   app.use('/api', (_req, res) => {

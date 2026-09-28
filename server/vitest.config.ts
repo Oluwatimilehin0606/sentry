@@ -18,10 +18,15 @@ function testDatabaseUrl(): string | undefined {
 }
 
 const databaseUrl = testDatabaseUrl();
+// Global setup runs in this process (not a test worker), so point it at the test DB too.
+if (databaseUrl) process.env.DATABASE_URL = databaseUrl;
 
 export default defineConfig({
   test: {
     environment: 'node',
+    globalSetup: ['./test/global-setup.ts'],
+    // Test files share one database, so run them one at a time.
+    fileParallelism: false,
     env: {
       NODE_ENV: 'test',
       ...(databaseUrl ? { DATABASE_URL: databaseUrl } : {}),

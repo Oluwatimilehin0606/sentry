@@ -100,6 +100,10 @@ Every choice is the strongest **free, open-source** option for its job and runs 
 **Output**
 - Migrations apply cleanly to an empty database.
 - API tests covering sign-up, duplicate email, wrong password, and a protected route with and without a session.
+
+> **Phase 1 status (2026-09-28): done.** Better Auth 1.7.6 with the Drizzle adapter; migration `0000_init` creates the auth tables plus `domains`, `scans`, `findings`. Sign-up requires `acceptTerms: true` (enforced server-side in a Better Auth `before` hook) and records `terms_accepted_at`. `requireAuth` middleware + `GET /api/me`. Vitest global setup migrates `sentry_test` and refuses any database not ending in `_test`. Client: React Router 8, `/sign-up`, `/sign-in` (with safe `?next=` redirect), protected `/account`, header account controls. 47 tests pass; the whole flow was checked in the browser, including refresh, sign-out, wrong password and phone width.
+>
+> Notes for later: the header wraps to three rows at phone width (fold into the Phase 5 layout work); the health badge now needs two failed checks in a row before showing a problem.
 - A user can sign up, log in, refresh the page and stay logged in, and log out — in the browser.
 
 ---

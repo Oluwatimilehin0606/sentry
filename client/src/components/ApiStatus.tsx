@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 type Health = { status: 'ok' | 'degraded'; db: 'ok' | 'unreachable'; uptime: number };
@@ -11,15 +12,32 @@ async function fetchHealth(): Promise<Health> {
   return body;
 }
 
+type State = 'pending' | 'ok' | 'degraded' | 'offline';
+
 export function ApiStatus() {
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, dataUpdatedAt, errorUpdatedAt } = useQuery({
     queryKey: ['health'],
     queryFn: fetchHealth,
     refetchInterval: 10_000,
     retry: false,
   });
 
-  const state = isPending ? 'pending' : isError ? 'offline' : data.db === 'ok' ? 'ok' : 'degraded';
+  const raw: State = isPending ? 'pending' : isError ? 'offline' : data.db === 'ok' ? 'ok' : 'degraded';
+
+  // One slow check shouldn't alarm anyone: only show a problem after two bad checks in a row.
+  const [shown, setShown] = useState<{ state: State; strikes: number }>({ state: 'pending', strikes: 0 });
+  const checkedAt = Math.max(dataUpdatedAt, errorUpdatedAt);
+  useEffect(() => {
+    if (raw === 'pending') return;
+    setShown((prev) => {
+      const bad = raw === 'degraded' || raw === 'offline';
+      const strikes = bad ? prev.strikes + 1 : 0;
+      const keepOk = bad && strikes < 2 && prev.state === 'ok';
+      return { state: keepOk ? 'ok' : raw, strikes };
+    });
+    // Re-run on every completed check, even when the result is unchanged.
+  }, [raw, checkedAt]);
+  const state = shown.state;
   const label = {
     pending: 'Connecting…',
     ok: 'API connected',
