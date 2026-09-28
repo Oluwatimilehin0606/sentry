@@ -28,7 +28,7 @@ export function AppLayout() {
       </main>
 
       <footer className="flex flex-wrap items-center justify-between gap-2 border-t py-5 text-[0.8125rem] text-muted-foreground">
-        <span>Sentry prototype · AI Foundry (QAF 2.0)</span>
+        <span>Sentry · Security check-ups in plain English</span>
         <span>Only check websites you own or have permission to test.</span>
       </footer>
     </div>

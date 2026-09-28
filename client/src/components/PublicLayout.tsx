@@ -51,7 +51,7 @@ export function PublicLayout() {
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-7 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
             <span className="font-display text-base font-bold text-foreground">Sentry</span>
-            <span>Security check-ups in plain English · Built for AI Foundry (QAF 2.0)</span>
+            <span>Security check-ups in plain English</span>
           </span>
           <span>Only check websites you own or have permission to test.</span>
         </div>
