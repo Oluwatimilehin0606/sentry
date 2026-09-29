@@ -13,7 +13,19 @@ export function createApp() {
 
   app.disable('x-powered-by');
   app.use(helmet());
-  app.use(pinoHttp({ logger }));
+  app.use(
+    pinoHttp({
+      logger,
+      // One short line per request: never headers, so cookies and session tokens stay out of logs.
+      serializers: {
+        req: (req: { method: string; url: string }) => ({ method: req.method, url: req.url }),
+        res: (res: { statusCode: number }) => ({ statusCode: res.statusCode }),
+      },
+      customLogLevel: (_req, res, err) => (err || res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info'),
+      // The status badge polls /api/health; only log it when something is wrong.
+      autoLogging: { ignore: (req) => req.url === '/api/health' },
+    }),
+  );
 
   // Better Auth reads the raw request body itself, so it must come before express.json().
   app.all('/api/auth/{*any}', toNodeHandler(auth));
