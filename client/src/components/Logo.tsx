@@ -1,11 +1,11 @@
 import { cn } from '@/lib/utils';
 
 /**
- * Sentry's mark: a shield (security) with a heartbeat trace shaped like an "S" (monitoring,
- * and the S in Sentry). The S path is the only thing to change if the mark is revised.
+ * Sentry's mark, from the user's sketch: a pointed shield (security) split from its top point to
+ * its bottom tip by a sharp zig-zag that reads as an "S" (the S in Sentry) and a pulse (monitoring).
  */
-const SHIELD_PATH = 'M12 2.8l7.5 3.2v5.4c0 4.9-3.2 9-7.5 10.8-4.3-1.8-7.5-5.9-7.5-10.8V6z';
-const S_PULSE_PATH = 'M15.6 7.2H9.9L8.6 10 15.4 13.4 14.1 16.3H8.7';
+const SHIELD_PATH = 'M12 2.3 20 5.9C20 12.4 17.2 18.3 12 21.7 6.8 18.3 4 12.4 4 5.9Z';
+const S_PULSE_PATH = 'M12 2.3 8.5 11 15.2 14.9 12 21.7';
 
 export function LogoMark({ size = 22, strokeWidth = 2.1, className }: { size?: number; strokeWidth?: number; className?: string }) {
   return (
@@ -20,7 +20,7 @@ export function LogoMark({ size = 22, strokeWidth = 2.1, className }: { size?: n
       className={className}
       aria-hidden="true"
     >
-      <path d={SHIELD_PATH} strokeLinejoin="round" />
+      <path d={SHIELD_PATH} strokeLinejoin="miter" strokeMiterlimit={3} />
       <path d={S_PULSE_PATH} strokeLinejoin="miter" />
     </svg>
   );
