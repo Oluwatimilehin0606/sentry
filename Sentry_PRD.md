@@ -132,6 +132,19 @@ There is no low-cost, low-friction tool that tells a non-technical business owne
 > - **Buttons:** primary, secondary, outline, ghost, danger and link variants; 32 / 40 / 48px sizes; default, hover, focus, loading and disabled states.
 > - **Inputs:** domain field with a fixed `https://` prefix and live validation messages, email, password with Show/Hide, re-scan interval dropdown, DNS verification record with Copy, and the terms-of-service checkbox.
 
+> **Note — Brand, landing page and app redesign (2026-09-28 → 2026-09-29)**
+>
+> Decisions made with the product owner, each approved from a mockup on the design canvas (https://claude.ai/artifact/7P9Pw3amPMSG6rCrYo9NP6).
+>
+> - **Process rule:** every visual change is shown as a mockup first and built only after approval.
+> - **Logo (approved):** drawn from the owner's own sketch: a pointed shield split from its top point to its bottom tip by a sharp zig-zag that reads as an **"S"** (the S in Sentry) and a **pulse** (monitoring). Style: **two-tone halves**, with a solid left half, a softer right half, and the S as a cut-out gap. Earlier options (shield + heartbeat, monitor screen, shield + tick, and S1/S2 variants) were compared and not chosen.
+> - **Who can do what:** anyone can read the public landing page; **checking a website requires an account**. The API refuses scans from signed-out visitors, and scans are rate-limited per account.
+> - **Landing page (`/`):** two-column hero with an example report that plays out like a live scan; "Plain English, not jargon" comparison; how it works; what Sentry checks; safety; final call to action. Button wording: **"Get started"**.
+> - **Motion:** scroll reveals, steps that light up in turn, hover touches, and a faint **heart-monitor wave** sweeping continuously behind the content. It has sharp ECG spikes like a hospital monitor, and a band wiped ahead of the sweep so passes never overlap. Anyone with "reduce motion" on sees a still page.
+> - **Sign-in / sign-up:** split screen with a deep-blue brand panel (logo, headline, live heartbeat trace, the 3 steps on sign-up) and a focused form. Sign-up has a password-strength meter. On phones the panel is a compact band.
+> - **Home (`/home`, signed in):** dashboard with a greeting and large check bar, recent checks (kept in the browser until scans are saved in Phase 5), the latest report, **"Your next step"** (the single fix that raises the grade most), "Your websites" (coming soon) and how grades work.
+> - **Quality bar:** Lighthouse on the production build scores 100 on desktop for accessibility, best practices and SEO (performance 99–100); on phones, 100 on those three and ~81–92 for performance. Fonts are self-hosted.
+
 ---
 
 ## 8. Risk Scoring Model (proposed)

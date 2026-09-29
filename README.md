@@ -118,7 +118,7 @@ Sentry needs PostgreSQL 18 running locally.
 | Command | What it does |
 |---|---|
 | `npm run dev` | Starts the web app and API together |
-| `npm test` | Runs the API tests |
+| `npm test` | Runs the API tests, then the website tests |
 | `npm run lint` | Checks code style |
 | `npm run typecheck` | Type-checks client and server |
 | `npm run build` | Builds the web app for production |

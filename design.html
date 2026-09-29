@@ -165,6 +165,28 @@
     display: grid; place-items: center;
   }
   .brand-name { font-family: var(--font-display); font-weight: 700; font-size: 1.375rem; letter-spacing: -0.01em; }
+  .brand-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .brand-tile {
+    border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface);
+    padding: 24px; min-height: 150px;
+    display: flex; flex-direction: column; justify-content: space-between; gap: 16px;
+  }
+  .brand-tile.on-dark { background: #0E2342; border-color: #0E2342; color: #E6EBF3; }
+  .brand-tile.on-dark .brand-mark { background: #6EA2EE; color: #0B111C; }
+  .brand-tile.on-dark .hint { color: #9EAABD; }
+  .mark-sizes { display: flex; align-items: flex-end; gap: 20px; color: var(--accent); }
+  .favicon { width: 16px; height: 16px; border-radius: 4px; background: #1F5FAD; color: #fff; display: grid; place-items: center; }
+  .pulse-panel { background: #0E2342; border-radius: var(--radius-lg); padding: 16px 0; overflow: hidden; }
+  .pulse { display: block; width: 100%; height: 110px; }
+  .pulse path {
+    fill: none; stroke: #6EA2EE; stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke;
+    filter: drop-shadow(0 0 4px rgb(110 162 238 / 0.6));
+  }
+  .strength { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .strength span { height: 4px; border-radius: 99px; background: var(--surface-2); transition: background-color .3s; }
+  .next-step { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+  .next-step h3 { font-size: 1rem; font-weight: 600; }
+  .next-step .lift { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; }
   .brand-sub { font-size: 0.8125rem; color: var(--text-muted); }
 
   .seg {
@@ -430,15 +452,15 @@
   .grade-badge {
     width: 72px; height: 72px; flex: none;
     border-radius: 14px;
-    border: 3px solid var(--grade-c);
+    border: 3px solid var(--grade-d);
     display: grid; place-items: center;
     font-family: var(--font-display); font-weight: 700; font-size: 2.5rem; line-height: 1;
-    color: var(--grade-c);
+    color: var(--grade-d);
   }
   .score-num { font-family: var(--font-display); font-weight: 700; font-size: 2rem; line-height: 1; font-variant-numeric: tabular-nums; }
   .score-num small { font-size: 1rem; color: var(--text-subtle); font-weight: 500; }
   .meter { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
-  .meter span { display: block; height: 100%; width: 72%; background: var(--grade-c); border-radius: inherit; }
+  .meter span { display: block; height: 100%; width: 66%; background: var(--grade-d); border-radius: inherit; }
   .counts { display: flex; flex-wrap: wrap; gap: 8px; }
 
   .pill {
@@ -480,7 +502,7 @@
   @media (max-width: 720px) {
     .wrap { padding-inline: 16px; gap: 44px; }
     .type-row { grid-template-columns: 1fr; gap: 8px; padding: 16px; }
-    .context { grid-template-columns: 1fr; }
+    .context { grid-template-columns: minmax(0, 1fr); }
     .grade-scale { grid-template-columns: repeat(5, minmax(0, 1fr)); }
     .grade-step { padding: 12px 8px; }
     .grade-range { font-size: 0.6875rem; }
@@ -492,11 +514,11 @@
   <header class="top">
     <div class="brand">
       <div class="brand-mark" aria-hidden="true">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+        <svg class="mark" width="24" height="24" viewBox="0 0 24 24"></svg>
       </div>
       <div>
         <div class="brand-name">Sentry</div>
-        <div class="brand-sub">Design preview · v0.1</div>
+        <div class="brand-sub">Design preview · v0.2</div>
       </div>
     </div>
     <div class="controls">
@@ -510,6 +532,42 @@
       </div>
     </div>
   </header>
+
+  <!-- ================= BRAND ================= -->
+  <section aria-labelledby="brand-h">
+    <div class="sec-head">
+      <span class="eyebrow">Brand</span>
+      <h2 id="brand-h">A shield with a pulse</h2>
+      <p>A pointed shield split from top to tip by a sharp zig-zag. It reads as the S in Sentry and as a heartbeat, because Sentry keeps watch. Two tones: a solid left half, a softer right half, and the S cut out between them.</p>
+    </div>
+
+    <div class="brand-grid">
+      <div class="brand-tile">
+        <div class="brand"><div class="brand-mark" aria-hidden="true"><svg class="mark" width="24" height="24" viewBox="0 0 24 24"></svg></div><div class="brand-name">Sentry</div></div>
+        <span class="hint">Default · blue tile on light or dark pages</span>
+      </div>
+      <div class="brand-tile on-dark">
+        <div class="brand"><div class="brand-mark" aria-hidden="true"><svg class="mark" width="24" height="24" viewBox="0 0 24 24"></svg></div><div class="brand-name">Sentry</div></div>
+        <span class="hint">On the deep-blue sign-in panel · #6EA2EE tile</span>
+      </div>
+      <div class="brand-tile">
+        <div class="mark-sizes" aria-hidden="true">
+          <svg class="mark mark-plain" width="64" height="64" viewBox="0 0 24 24"></svg>
+          <svg class="mark mark-plain" width="32" height="32" viewBox="0 0 24 24"></svg>
+          <span class="favicon"><svg class="mark" width="14" height="14" viewBox="0 0 24 24"></svg></span>
+        </div>
+        <span class="hint">Mark alone at 64 and 32 px · favicon at 16 px</span>
+      </div>
+    </div>
+
+    <div class="group">
+      <span class="group-label">Heartbeat trace</span>
+      <div class="pulse-panel">
+        <svg class="pulse" viewBox="0 0 1060 120" preserveAspectRatio="none" aria-hidden="true"><path id="pulse-path" /></svg>
+      </div>
+      <p class="hint">Sharp ECG beats of different heights with flat line between them, like a hospital monitor. It sweeps continuously behind the landing page (very faint), in the sign-in panel and in the home page header. With “reduce motion” on it stands still.</p>
+    </div>
+  </section>
 
   <!-- ================= COLOUR ================= -->
   <section aria-labelledby="color-h">
@@ -657,10 +715,11 @@
         <div class="field">
           <label for="password">Password</label>
           <div class="affix">
-            <input class="input" id="password" name="password" type="password" autocomplete="new-password" value="correct-horse-battery">
+            <input class="input" id="password" name="password" type="password" autocomplete="new-password" value="correct-horse-battery" aria-describedby="pw-msg">
             <button class="affix-btn" type="button" id="pw-toggle" aria-controls="password" aria-pressed="false">Show</button>
           </div>
-          <span class="hint">At least 12 characters.</span>
+          <div class="strength" id="pw-meter" role="meter" aria-label="Password strength" aria-valuemin="0" aria-valuemax="4"><span></span><span></span><span></span><span></span></div>
+          <span class="hint" id="pw-msg" aria-live="polite"></span>
         </div>
 
         <div class="field">
@@ -712,21 +771,28 @@
     <div class="context">
       <div class="score-card">
         <div class="score-top">
-          <div class="grade-badge" aria-label="Grade C">C</div>
+          <div class="grade-badge" aria-label="Grade D">D</div>
           <div>
-            <div class="score-num">72<small> / 100</small></div>
+            <div class="score-num">66<small> / 100</small></div>
             <div class="t-small">yourbakery.example</div>
           </div>
         </div>
-        <div class="meter" role="img" aria-label="Score 72 out of 100"><span></span></div>
-        <p>Your site scored a C. Three issues are putting you at risk. Fix the critical one first.</p>
+        <div class="meter" role="img" aria-label="Score 66 out of 100"><span></span></div>
+        <p>Your site scored a D. Two issues are putting you at risk. Fix the critical one first.</p>
         <div class="counts">
           <span class="pill pill-critical">1 critical</span>
-          <span class="pill pill-medium">1 medium</span>
-          <span class="pill pill-low">1 low</span>
-          <span class="pill pill-pass">14 passed</span>
+                    <span class="pill pill-low">1 low</span>
+          <span class="pill pill-pass">15 passed</span>
         </div>
         <button class="btn btn-outline" type="button">Download PDF</button>
+      </div>
+
+      <div class="next-step">
+        <span class="t-caption">Your next step</span>
+        <h3>Make your private settings file private</h3>
+        <p class="t-small">Fixing this one issue lifts you from <strong>D</strong> to</p>
+        <span class="lift" style="color:var(--grade-a)">A · 96 / 100</span>
+        <p class="hint">On the home page, Sentry picks the single fix that raises your grade the most.</p>
       </div>
 
       <article class="finding">
@@ -746,7 +812,7 @@
   </section>
 
   <footer>
-    Sentry design preview · Tokens map to shadcn/ui CSS variables · Headings: Bricolage Grotesque · Body: Public Sans · Mono: JetBrains Mono (all Google Fonts)
+    Sentry design preview · Tokens map to shadcn/ui CSS variables · Headings: Bricolage Grotesque · Body: Public Sans · Mono: JetBrains Mono (self-hosted in the app)
   </footer>
 </div>
 
@@ -763,6 +829,73 @@
     }
     buttons.forEach(function (b) { b.addEventListener('click', function () { applyTheme(b.dataset.themeSet); }); });
     try { var saved = localStorage.getItem('sentry-theme'); if (saved) applyTheme(saved); } catch (e) {}
+
+    // Logo mark (same geometry as client/src/components/Logo.tsx)
+    var LEFT = 'M12 2.3 8.7 10.1 14 14.2 12 21.7C7.2 18.4 4.6 12.5 4.8 6.4Z';
+    var RIGHT = 'M12 2.3 19.2 6.4C19.4 12.5 16.8 18.4 12 21.7L14 14.2 8.7 10.1Z';
+    var CUT = 'M12 2.3 8.7 10.1 14 14.2 12 21.7';
+    document.querySelectorAll('svg.mark').forEach(function (svg, i) {
+      var id = 'sentry-s-' + i;
+      svg.setAttribute('aria-hidden', 'true');
+      svg.innerHTML =
+        '<defs><mask id="' + id + '" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">' +
+        '<rect width="24" height="24" fill="white"/>' +
+        '<path d="' + CUT + '" fill="none" stroke="black" stroke-width="1.2" stroke-linejoin="miter" stroke-linecap="butt"/></mask></defs>' +
+        '<g mask="url(#' + id + ')" fill="currentColor"><path d="' + LEFT + '"/><path d="' + RIGHT + '" opacity="0.5"/></g>';
+    });
+
+    // Heartbeat trace (same beat shape and strip as MonitorWave.tsx)
+    var COMPLEX = [[0,0],[8,-0.14],[16,0],[30,0],[34,0.16],[42,-1],[50,0.55],[56,0],[80,0],[92,-0.2],[104,0]];
+    var STRIP = [[60,0.45],[260,1],[470,0.7],[660,0.95],[860,0.28]];
+    var d = 'M0 70';
+    STRIP.forEach(function (beat) {
+      COMPLEX.forEach(function (p) { d += ' L' + (beat[0] + p[0]) + ' ' + (70 + p[1] * 55 * beat[1]).toFixed(1); });
+    });
+    d += ' L1060 70';
+    var pulsePath = document.getElementById('pulse-path');
+    pulsePath.setAttribute('d', d);
+    var len = Math.ceil(pulsePath.getTotalLength());
+    // Draw the trace in, then wipe it from the start, like a monitor sweep. Still if reduce motion is on.
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches && pulsePath.animate) {
+      pulsePath.style.strokeDasharray = len + ' ' + len;
+      pulsePath.animate([{ strokeDashoffset: len }, { strokeDashoffset: -len }], { duration: 6200, iterations: Infinity });
+    }
+
+    // Password strength (same rules as client/src/lib/password-strength.ts)
+    var COMMON = /(password|passw0rd|qwerty|letmein|welcome|admin|sentry|123456|abcdef|iloveyou)/i;
+    function strength(p) {
+      if (!p) return [0, '', 'At least 12 characters. A short phrase is easy to remember.'];
+      if (p.length < 12) { var left = 12 - p.length; return [1, 'Too short', left + ' more character' + (left === 1 ? '' : 's') + ' to go.']; }
+      if (COMMON.test(p) || /^(.)\1+$/.test(p)) return [1, 'Easy to guess', 'This contains a very common word or pattern. Try a phrase only you would use.'];
+      var kinds = [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter(function (re) { return re.test(p); }).length;
+      var words = p.split(/[\s\-_.]+/).filter(function (w) { return w.length >= 3; }).length;
+      var score = 2 + (p.length >= 16 ? 1 : 0) + (kinds >= 3 || words >= 3 ? 1 : 0);
+      return [score].concat({
+        2: ['Fair', 'Longer is stronger: try a phrase of three or more words.'],
+        3: ['Good', 'Nearly there. A few more characters make it strong.'],
+        4: ['Strong', 'Great. A phrase like this is easy for you and hard to guess.'],
+      }[score]);
+    }
+    var BAR = ['', 'var(--critical)', 'var(--medium)', 'var(--accent)', 'var(--pass)'];
+    var pwInput = document.getElementById('password');
+    var pwMeter = document.getElementById('pw-meter');
+    var pwMsg = document.getElementById('pw-msg');
+    function showStrength() {
+      var s = strength(pwInput.value);
+      pwMeter.setAttribute('aria-valuenow', s[0]);
+      pwMeter.setAttribute('aria-valuetext', s[1] || 'Not entered');
+      pwMeter.querySelectorAll('span').forEach(function (bar, i) { bar.style.background = i < s[0] ? BAR[s[0]] : ''; });
+      pwMsg.innerHTML = '';
+      if (s[1]) {
+        var b = document.createElement('strong');
+        b.style.color = BAR[s[0]];
+        b.textContent = s[1] + ' · ';
+        pwMsg.appendChild(b);
+      }
+      pwMsg.appendChild(document.createTextNode(s[2]));
+    }
+    pwInput.addEventListener('input', showStrength);
+    showStrength();
     // Run scan loading demo
     var runBtn = document.getElementById('run-scan');
     var scanStatus = document.getElementById('scan-status');
@@ -775,7 +908,7 @@
       setTimeout(function () {
         runBtn.removeAttribute('aria-busy');
         runBtn.innerHTML = runLabel;
-        scanStatus.textContent = 'Scan finished in 2 seconds. Your site scored a C.';
+        scanStatus.textContent = 'Scan finished in 2 seconds. Your site scored a D.';
       }, 2000);
     });
 
@@ -829,7 +962,7 @@
       formStatus.textContent = validateDomain() ? 'Domain added. Next, add the verification record.' : 'Fix the domain above, then try again.';
     });
     form.addEventListener('reset', function () {
-      setTimeout(function () { validateDomain(); formStatus.textContent = ''; }, 0);
+      setTimeout(function () { validateDomain(); showStrength(); formStatus.textContent = ''; }, 0);
     });
   })();
 </script>

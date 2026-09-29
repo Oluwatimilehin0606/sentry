@@ -106,6 +106,10 @@ Every choice is the strongest **free, open-source** option for its job and runs 
 > Notes for later: the header wraps to three rows at phone width (fold into the Phase 5 layout work); the health badge now needs two failed checks in a row before showing a problem.
 - A user can sign up, log in, refresh the page and stay logged in, and log out — in the browser.
 
+> **Between phases — brand and app redesign (2026-09-28 → 2026-09-29): done.** Public landing page at `/` (scanner moved behind sign-in; `POST /api/scan` now requires a session and is rate-limited per account), scroll motion and a heart-monitor background wave, the new two-tone shield-and-S logo from the owner's sketch (favicon too), split-screen sign-in/sign-up with a password-strength meter, and a signed-in dashboard at `/home` (check bar, recent checks, latest report, "Your next step", how grades work). Every visual change was approved as a mockup on the design canvas first. Client unit tests added with Vitest for domain checks, grading/next-step and password strength; `npm test` at the root runs server and client suites. Decisions are recorded in the PRD note of the same date.
+>
+> Carried into Phase 2: the landing page's "Exposed files" card still says "Coming next" — remove it when the exposed-path probe ships (mockup first).
+
 ---
 
 ## Phase 2 — Scanning Engine (Days 5–10)
