@@ -37,6 +37,12 @@ export async function runScan(domain: string): Promise<ScanReport> {
     throw new ScanError('We couldn’t reach the Sentry server. Check it’s running and try again.');
   }
   const body = await res.json().catch(() => null);
-  if (!res.ok) throw new ScanError(body?.error ?? 'Something went wrong. Please try again.');
+  if (!res.ok) {
+    if (body?.error) throw new ScanError(body.error);
+    if (res.status === 401) throw new ScanError('Your session has ended. Please sign in again.');
+    if (res.status >= 500)
+      throw new ScanError('Sentry’s server couldn’t be reached just now. Please try again in a moment.');
+    throw new ScanError('Something went wrong. Please try again.');
+  }
   return body as ScanReport;
 }

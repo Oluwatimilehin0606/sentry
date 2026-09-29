@@ -1,25 +1,55 @@
-import { Link, Outlet } from 'react-router';
+import { NavLink, Outlet } from 'react-router';
+import { AccountMenu } from '@/components/AccountMenu';
 import { ApiStatus } from '@/components/ApiStatus';
 import { Logo } from '@/components/Logo';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { UserMenu } from '@/components/UserMenu';
+import { cn } from '@/lib/utils';
 
-/** Header and footer for signed-in pages (home, account). */
+/** Sections of the signed-in app. Websites and Reports arrive with monitoring (later phases). */
+const NAV: { to?: string; label: string }[] = [{ to: '/home', label: 'Home' }, { label: 'Websites' }, { label: 'Reports' }];
+
+/** Frame for signed-in pages: app header with navigation and account menu. */
 export function AppLayout() {
   return (
-    <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 sm:px-6">
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b py-4">
-        <Link
-          to="/home"
-          aria-label="Sentry home"
-          className="rounded-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
-        >
-          <Logo />
-        </Link>
-        <div className="flex flex-wrap items-center gap-3">
-          <ApiStatus />
-          <ThemeToggle />
-          <UserMenu />
+    <div className="flex min-h-screen flex-col">
+      <header className="border-b bg-card">
+        <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+          <div className="flex items-center gap-4 sm:gap-10">
+            <NavLink
+              to="/home"
+              aria-label="Sentry home"
+              className="rounded-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+            >
+              <Logo />
+            </NavLink>
+            <nav aria-label="App" className="hidden items-center gap-1.5 text-[0.9375rem] font-semibold md:flex">
+              {NAV.map(({ to, label }) =>
+                to ? (
+                  <NavLink
+                    key={label}
+                    to={to}
+                    className={({ isActive }) =>
+                      cn(
+                        'rounded-lg px-3.5 py-2 transition-colors',
+                        isActive ? 'bg-primary-soft text-primary' : 'text-muted-foreground hover:text-foreground',
+                      )
+                    }
+                  >
+                    {label}
+                  </NavLink>
+                ) : (
+                  <span
+                    key={label}
+                    aria-disabled="true"
+                    className="flex items-center gap-2 rounded-lg px-3.5 py-2 text-muted-foreground"
+                  >
+                    {label}
+                    <span className="rounded-full bg-muted px-1.5 py-px text-[0.6875rem] font-bold">Soon</span>
+                  </span>
+                ),
+              )}
+            </nav>
+          </div>
+          <AccountMenu />
         </div>
       </header>
 
@@ -27,9 +57,14 @@ export function AppLayout() {
         <Outlet />
       </main>
 
-      <footer className="flex flex-wrap items-center justify-between gap-2 border-t py-5 text-[0.8125rem] text-muted-foreground">
-        <span>Sentry · Security check-ups in plain English</span>
-        <span>Only check websites you own or have permission to test.</span>
+      <footer className="border-t">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-5 text-[0.8125rem] text-muted-foreground sm:px-6">
+          <span>Sentry · Security check-ups in plain English</span>
+          <span className="flex items-center gap-3">
+            <ApiStatus />
+            Only check websites you own or have permission to test.
+          </span>
+        </div>
       </footer>
     </div>
   );

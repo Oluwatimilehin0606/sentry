@@ -38,6 +38,12 @@ What works today, at http://localhost:5173 after `npm run dev`:
 - Self-hosted fonts (no Google Fonts requests), pages load on demand, `robots.txt`, link-preview tags.
 - Motion: the example report plays out like a live scan (checks tick off, score counts up to 72, grade and findings appear, "Run again" to replay); sections fade up on scroll; "How it works" draws a line through steps 1 → 2 → 3; a before → after reveal for the plain-English comparison; subtle hover effects; a faint heart-monitor wave behind the content that sweeps across the screen continuously, like a hospital monitor. No animation library, and anyone with "reduce motion" switched on gets the static page.
 
+**Brand, sign-in and home redesign (29 Sep 2026).**
+
+- New logo: a shield with a heartbeat drawn as an "S" (security, monitoring, and the S in Sentry).
+- Sign-in and sign-up are a split screen: a deep-blue brand panel with a live heart-monitor trace, and a focused form; sign-up adds a password-strength meter. On phones the panel becomes a compact band.
+- The signed-in home is a dashboard: greeting and a large check bar, recent checks (kept in the browser until scans are saved in Phase 5), the latest report, "Your next step" (the fix that raises the grade most), "Your websites" (coming soon) and how grades work. New account menu with theme and sign out.
+
 **Next up (see [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)):**
 
 1. **Phase 2:** complete the scanner: exposed-file checks (`.env`, `.git`, backups) and TLS protocol checks.

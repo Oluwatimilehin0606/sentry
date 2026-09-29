@@ -1,15 +1,8 @@
-import { CheckCircle2, ChevronDown } from 'lucide-react';
+import { Check, CheckCircle2, ChevronDown } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { Grade, ReportFinding, ScanReport as Report, Severity } from '@/lib/scan';
+import { GRADE_COLOR } from '@/lib/grading';
+import type { ReportFinding, ScanReport as Report, Severity } from '@/lib/scan';
 import { cn } from '@/lib/utils';
-
-const GRADE_COLOR: Record<Grade, string> = {
-  A: 'var(--grade-a)',
-  B: 'var(--grade-b)',
-  C: 'var(--grade-c)',
-  D: 'var(--grade-d)',
-  F: 'var(--grade-f)',
-};
 
 const SEVERITY_STYLE: Record<Severity, { pill: string; stripe: string; label: string }> = {
   critical: { pill: 'bg-critical-soft text-critical', stripe: 'border-l-critical', label: 'Critical' },
@@ -19,47 +12,33 @@ const SEVERITY_STYLE: Record<Severity, { pill: string; stripe: string; label: st
 
 function Pill({ className, children }: { className: string; children: ReactNode }) {
   return (
-    <span
-      className={cn(
-        'inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold whitespace-nowrap',
-        className,
-      )}
-    >
-      <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
+    <span className={cn('inline-flex h-6 items-center rounded-full px-2.5 text-xs font-semibold whitespace-nowrap', className)}>
       {children}
     </span>
   );
 }
 
-function FindingCard({ finding, open }: { finding: ReportFinding; open: boolean }) {
+function FindingRow({ finding, open }: { finding: ReportFinding; open: boolean }) {
   const style = SEVERITY_STYLE[finding.severity];
   return (
-    <details
-      open={open}
-      className={cn('group rounded-lg border border-l-4 bg-card', style.stripe)}
-    >
-      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-2 p-4 sm:px-5 [&::-webkit-details-marker]:hidden">
+    <details open={open} className={cn('group border-t border-l-4 first:border-t-0', style.stripe)}>
+      <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-4 transition-colors hover:bg-muted/50 [&::-webkit-details-marker]:hidden">
         <Pill className={style.pill}>{style.label}</Pill>
-        <h3 className="flex-[1_1_220px] font-semibold">{finding.title}</h3>
-        <ChevronDown
-          className="size-5 text-muted-foreground transition-transform group-open:rotate-180"
-          aria-hidden="true"
-        />
+        <h3 className="flex-1 font-semibold">{finding.title}</h3>
+        <ChevronDown className="size-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
       </summary>
-      <div className="flex flex-col gap-3 px-4 pb-4 sm:px-5 sm:pb-5">
-        <dl className="grid gap-3">
+      <div className="flex flex-col gap-4 px-5 pb-5">
+        <p className="max-w-[70ch] text-[0.9375rem] text-muted-foreground">{finding.whatItIs}</p>
+        <dl className="grid gap-4 sm:grid-cols-2 sm:gap-5">
           {(
             [
-              ['What it is', finding.whatItIs],
               ['Why it matters', finding.whyItMatters],
               ['How to fix', finding.howToFix],
             ] as const
           ).map(([term, text]) => (
             <div key={term}>
-              <dt className="text-xs font-semibold tracking-[0.06em] text-subtle-foreground uppercase">
-                {term}
-              </dt>
-              <dd className="mt-0.5 max-w-[65ch] text-[0.9375rem]">{text}</dd>
+              <dt className="text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase">{term}</dt>
+              <dd className="mt-0.5 text-[0.9375rem]">{text}</dd>
             </div>
           ))}
         </dl>
@@ -73,6 +52,7 @@ function FindingCard({ finding, open }: { finding: ReportFinding; open: boolean 
   );
 }
 
+/** A scan report laid out for the home dashboard: grade summary, then findings most-urgent first. */
 export function ScanReport({ report }: { report: Report }) {
   const failed = report.findings.filter((f) => f.status === 'fail');
   const passed = report.findings.filter((f) => f.status === 'pass');
@@ -82,33 +62,29 @@ export function ScanReport({ report }: { report: Report }) {
     .filter(([, n]) => n > 0);
 
   return (
-    <section aria-label={`Scan report for ${report.hostname}`} className="grid items-start gap-5 lg:grid-cols-[340px_1fr]">
-      <div className="flex flex-col gap-4 rounded-lg border bg-card p-6 shadow-[0_1px_2px_rgb(17_26_43/0.05),0_6px_16px_rgb(17_26_43/0.06)] lg:sticky lg:top-6">
-        <div className="flex items-center gap-4">
+    <section aria-label={`Scan report for ${report.hostname}`} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5 rounded-[14px] border bg-card p-5 shadow-[0_1px_2px_rgb(17_26_43/0.05),0_10px_28px_rgb(17_26_43/0.07)] sm:flex-row sm:items-center sm:gap-6 sm:p-6">
+        <div className="flex items-center gap-5 sm:contents">
           <div
-            className="grid size-[72px] shrink-0 place-items-center rounded-[14px] border-[3px] font-display text-[2.5rem] leading-none font-bold"
-            style={{ borderColor: color, color }}
             aria-label={`Grade ${report.grade}`}
+            className="grid size-[76px] shrink-0 place-items-center rounded-[18px] border-[3px] font-display text-[2.75rem] leading-none font-bold sm:size-[84px] sm:text-5xl"
+            style={{ borderColor: color, color }}
           >
             {report.grade}
           </div>
-          <div className="min-w-0">
-            <div className="font-display text-[2rem] leading-none font-bold tabular-nums">
-              {report.score}
-              <span className="text-base font-medium text-subtle-foreground"> / 100</span>
+          <div className="flex flex-1 flex-col gap-2.5">
+            <div className="flex items-baseline gap-2">
+              <span className="font-display text-[2.125rem] leading-none font-bold tabular-nums">{report.score}</span>
+              <span className="text-muted-foreground">/ 100</span>
             </div>
-            <div className="truncate text-sm text-muted-foreground">{report.hostname}</div>
+            <div role="img" aria-label={`Score ${report.score} out of 100`} className="h-2 overflow-hidden rounded-full bg-muted">
+              <span className="block h-full rounded-full" style={{ width: `${report.score}%`, background: color }} />
+            </div>
+            <p className="hidden sm:block">{report.summary}</p>
           </div>
         </div>
-        <div
-          className="h-2 overflow-hidden rounded-full bg-muted"
-          role="img"
-          aria-label={`Score ${report.score} out of 100`}
-        >
-          <span className="block h-full rounded-full" style={{ width: `${report.score}%`, background: color }} />
-        </div>
-        <p>{report.summary}</p>
-        <div className="flex flex-wrap gap-2">
+        <p className="sm:hidden">{report.summary}</p>
+        <div className="flex flex-wrap gap-2 sm:flex-col sm:items-end">
           {counts.map(([severity, n]) => (
             <Pill key={severity} className={SEVERITY_STYLE[severity].pill}>
               {n} {severity}
@@ -116,50 +92,42 @@ export function ScanReport({ report }: { report: Report }) {
           ))}
           <Pill className="bg-pass-soft text-pass">{passed.length} passed</Pill>
         </div>
-        <p className="text-xs text-subtle-foreground">
-          Checked {new Date(report.scannedAt).toLocaleString()} · took{' '}
-          {(report.durationMs / 1000).toFixed(1)}s
-        </p>
       </div>
 
-      <div className="flex flex-col gap-3">
-        {failed.length > 0 ? (
-          <>
-            <h2 className="font-display text-xl font-bold tracking-tight">What to fix, most urgent first</h2>
-            {failed.map((f, i) => (
-              <FindingCard key={f.checkId} finding={f} open={i === 0} />
-            ))}
-          </>
-        ) : (
-          <div className="flex gap-3 rounded-lg border bg-pass-soft p-5">
-            <CheckCircle2 className="size-6 shrink-0 text-pass" aria-hidden="true" />
-            <p>
-              <strong className="font-semibold">Nice work.</strong> {report.hostname} passed every
-              check we ran. Keep your software up to date and check again after big changes.
-            </p>
-          </div>
-        )}
+      {failed.length === 0 && (
+        <div className="flex gap-3 rounded-[14px] border bg-pass-soft p-5">
+          <CheckCircle2 className="size-6 shrink-0 text-pass" aria-hidden="true" />
+          <p>
+            <strong className="font-semibold">Nice work.</strong> {report.hostname} passed every check we ran. Keep your
+            software up to date and check again after big changes.
+          </p>
+        </div>
+      )}
 
+      <div className="overflow-hidden rounded-[14px] border bg-card">
+        {failed.map((f, i) => (
+          <FindingRow key={f.checkId} finding={f} open={i === 0} />
+        ))}
         {passed.length > 0 && (
-          <details className="group rounded-lg border bg-card">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 font-semibold sm:px-5 [&::-webkit-details-marker]:hidden">
-              What passed ({passed.length})
-              <ChevronDown
-                className="size-5 text-muted-foreground transition-transform group-open:rotate-180"
-                aria-hidden="true"
-              />
+          <details className={cn('group bg-pass-soft/60', failed.length > 0 && 'border-t')}>
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 font-semibold text-pass [&::-webkit-details-marker]:hidden">
+              <span className="flex items-center gap-2.5">
+                <Check className="size-[18px]" strokeWidth={2.6} aria-hidden="true" />
+                {passed.length} {passed.length === 1 ? 'check' : 'checks'} passed
+              </span>
+              <span className="flex items-center gap-1 text-sm">
+                <span className="group-open:hidden">Show</span>
+                <span className="hidden group-open:inline">Hide</span>
+                <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+              </span>
             </summary>
-            <ul className="flex flex-col gap-2.5 px-4 pb-4 sm:px-5">
+            <ul className="flex flex-col gap-2.5 px-5 pb-5">
               {passed.map((f) => (
                 <li key={f.checkId} className="flex gap-2.5 text-[0.9375rem]">
                   <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-pass" aria-hidden="true" />
                   <span>
                     {f.title}
-                    {f.evidence && (
-                      <span className="block font-mono text-xs break-all text-subtle-foreground">
-                        {f.evidence}
-                      </span>
-                    )}
+                    {f.evidence && <span className="block font-mono text-xs break-all text-muted-foreground">{f.evidence}</span>}
                   </span>
                 </li>
               ))}
@@ -167,6 +135,10 @@ export function ScanReport({ report }: { report: Report }) {
           </details>
         )}
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        Checked {new Date(report.scannedAt).toLocaleString()} · took {(report.durationMs / 1000).toFixed(1)}s
+      </p>
     </section>
   );
 }

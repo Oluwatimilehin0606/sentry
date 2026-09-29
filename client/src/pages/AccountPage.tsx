@@ -20,7 +20,7 @@ export function AccountPage() {
   const { data, isPending, isError } = useQuery({ queryKey: ['me'], queryFn: fetchMe });
 
   return (
-    <div className="flex flex-col gap-10 py-12 sm:py-16">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 sm:py-16">
       <div className="flex flex-col gap-1.5">
         <span className="text-xs font-semibold tracking-[0.08em] text-primary uppercase">Your account</span>
         <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">

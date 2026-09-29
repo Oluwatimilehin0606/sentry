@@ -1,12 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { Link, Navigate, useNavigate } from 'react-router';
 import { z } from 'zod';
-import { AuthCard, FormError } from '@/components/AuthCard';
+import { AuthShell } from '@/components/AuthShell';
+import { FormError } from '@/components/FormError';
 import { FormField } from '@/components/FormField';
 import { PasswordInput } from '@/components/PasswordInput';
+import { PasswordStrength } from '@/components/PasswordStrength';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -25,6 +27,8 @@ const SignUpSchema = z.object({
 
 type SignUpValues = z.input<typeof SignUpSchema>;
 
+const STEPS = ['Create your account', 'Add your website and prove it’s yours', 'Get your grade and a fix list'];
+
 export function SignUpPage() {
   const { data: session } = useSession();
   const navigate = useNavigate();
@@ -39,6 +43,7 @@ export function SignUpPage() {
     resolver: zodResolver(SignUpSchema),
     defaultValues: { name: '', email: '', password: '', acceptTerms: false as unknown as true },
   });
+  const password = useWatch({ control, name: 'password' }) ?? '';
 
   if (session) return <Navigate to="/home" replace />;
 
@@ -59,19 +64,49 @@ export function SignUpPage() {
   });
 
   return (
-    <AuthCard
-      title="Create your Sentry account"
-      subtitle="Save your websites and see how their security changes over time."
-      footer={
+    <AuthShell
+      panel={
         <>
-          Already have an account?{' '}
-          <Link to="/sign-in" className="font-semibold text-primary underline-offset-4 hover:underline">
-            Sign in
-          </Link>
+          <h2 className="font-display text-[2rem] leading-[1.08] font-bold tracking-tight lg:text-[2.875rem] lg:leading-[1.06]">
+            Find out your website’s grade.
+          </h2>
+          <p className="hidden text-lg text-[#a9bbd6] lg:block">
+            Free, no technical knowledge needed. You’re three steps away.
+          </p>
+          <ol className="mt-5 hidden flex-col gap-3.5 lg:flex">
+            {STEPS.map((step, i) => (
+              <li key={step} className={i === 0 ? 'flex items-center gap-3.5' : 'flex items-center gap-3.5 text-[#a9bbd6]'}>
+                <span
+                  className={
+                    i === 0
+                      ? 'grid size-[30px] shrink-0 place-items-center rounded-full bg-[#6ea2ee] text-sm font-bold text-[#0b111c] shadow-[0_0_0_5px_rgb(110_162_238/0.22)]'
+                      : 'grid size-[30px] shrink-0 place-items-center rounded-full border-[1.5px] border-[#3a5378] text-sm font-bold'
+                  }
+                >
+                  {i + 1}
+                </span>
+                <span className={i === 0 ? 'font-semibold' : undefined}>{step}</span>
+                {i === 0 && <span className="text-[0.8125rem] text-[#6ea2ee]">You’re here</span>}
+              </li>
+            ))}
+          </ol>
         </>
       }
+      compactPanel="Step 1 of 3 · Create your account"
+      switchLink={
+        <>
+          <span className="hidden lg:inline">Already have an account? </span>
+          <Link to="/sign-in">Sign in</Link>
+        </>
+      }
+      points={['Free', 'No card needed', 'Results in seconds']}
     >
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+        <div className="flex flex-col gap-1.5">
+          <h1 className="font-display text-[1.75rem] font-bold tracking-tight lg:text-[2.125rem]">Create your account</h1>
+          <p className="text-muted-foreground">It takes under a minute.</p>
+        </div>
+
         <FormError message={formError} />
 
         <FormField id="name" label="Your name" error={errors.name?.message}>
@@ -101,19 +136,15 @@ export function SignUpPage() {
           />
         </FormField>
 
-        <FormField
-          id="password"
-          label="Password"
-          hint="At least 12 characters."
-          error={errors.password?.message}
-        >
+        <FormField id="password" label="Password" error={errors.password?.message}>
           <PasswordInput
             id="password"
             autoComplete="new-password"
             aria-invalid={!!errors.password}
-            aria-describedby="password-msg"
+            aria-describedby="password-msg password-strength"
             {...register('password')}
           />
+          <PasswordStrength password={password} id="password-strength" />
         </FormField>
 
         <div className="flex flex-col gap-1.5">
@@ -144,11 +175,14 @@ export function SignUpPage() {
           )}
         </div>
 
-        <Button type="submit" size="lg" disabled={isSubmitting} aria-busy={isSubmitting}>
+        <Button type="submit" size="lg" disabled={isSubmitting} aria-busy={isSubmitting} className="group">
           {isSubmitting && <Loader2 className="animate-spin" aria-hidden="true" />}
           {isSubmitting ? 'Creating account…' : 'Create account'}
+          {!isSubmitting && (
+            <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
+          )}
         </Button>
       </form>
-    </AuthCard>
+    </AuthShell>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { motionEnabled } from '@/lib/motion';
+import { cn } from '@/lib/utils';
 
 /**
  * A subtle heart-monitor trace behind the landing page. A glowing point sweeps left to right,
@@ -67,15 +68,36 @@ function readColor(): string {
   return value || '#1f5fad';
 }
 
-export function MonitorWave() {
+type Props = {
+  /** Where the wave sits. Defaults to the whole viewport, behind the page. */
+  className?: string;
+  /** Vertical position of the baseline, as a fraction of the container's height. */
+  baseline?: number;
+  /** Trace opacity in light and dark themes. */
+  alpha?: { light: number; dark: number };
+  /** Fixed colour (e.g. on a dark brand panel); defaults to the theme's primary colour. */
+  color?: string;
+  /** Spike height as a fraction of the container's height. */
+  ampRatio?: number;
+};
+
+export function MonitorWave({
+  className = 'fixed inset-0 z-0',
+  baseline = 0.52,
+  alpha = { light: 0.28, dark: 0.4 },
+  color: fixedColor,
+  ampRatio = 0.09,
+}: Props) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const headRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const wrapper = wrapperRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     const head$ = headRef.current;
-    if (!canvas || !ctx) return;
+    if (!wrapper || !canvas || !ctx) return;
 
     let width = 0;
     let height = 0;
@@ -83,7 +105,7 @@ export function MonitorWave() {
     let amp = 0; // px for a full-height spike
     let baseY = 0;
     let eraseBand = 0; // px wiped ahead of the head
-    let color = readColor();
+    let color = fixedColor ?? readColor();
     const isDark = () => document.documentElement.classList.contains('dark');
 
     const yAt = (x: number) => {
@@ -93,21 +115,21 @@ export function MonitorWave() {
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
-      width = window.innerWidth;
-      height = window.innerHeight;
+      width = Math.max(1, wrapper.clientWidth);
+      height = Math.max(1, wrapper.clientHeight);
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       scaleX = Math.max(0.75, Math.min(1.25, width / 1200));
-      amp = Math.max(34, Math.min(84, height * 0.09));
-      baseY = height * 0.52;
+      amp = Math.max(28, Math.min(84, height * ampRatio));
+      baseY = height * baseline;
       eraseBand = Math.max(80, width * 0.12);
       ctx.lineJoin = 'miter';
       ctx.miterLimit = 4;
       ctx.lineCap = 'round';
     };
 
-    const strokeAlpha = () => (isDark() ? 0.4 : 0.28);
+    const strokeAlpha = () => (isDark() ? alpha.dark : alpha.light);
 
     const setStroke = () => {
       ctx.strokeStyle = color;
@@ -138,12 +160,12 @@ export function MonitorWave() {
     if (!motionEnabled()) {
       if (head$) head$.hidden = true;
       drawStill();
-      const onResize = () => {
+      const still = new ResizeObserver(() => {
         resize();
         drawStill();
-      };
-      window.addEventListener('resize', onResize);
-      return () => window.removeEventListener('resize', onResize);
+      });
+      still.observe(wrapper);
+      return () => still.disconnect();
     }
 
     let head = 0;
@@ -202,26 +224,32 @@ export function MonitorWave() {
       tick(now);
     });
 
-    const onResize = () => {
+    // Follow the container's size (the viewport for the page, or a panel).
+    const sizeObserver = new ResizeObserver(() => {
       resize();
       ctx.clearRect(0, 0, width, height);
-    };
+    });
+    sizeObserver.observe(wrapper);
     // Pick up theme changes (light/dark) for the stroke colour.
     const themeObserver = new MutationObserver(() => {
-      color = readColor();
+      color = fixedColor ?? readColor();
     });
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    window.addEventListener('resize', onResize);
 
     return () => {
       cancelAnimationFrame(frame);
-      window.removeEventListener('resize', onResize);
+      sizeObserver.disconnect();
       themeObserver.disconnect();
     };
-  }, []);
+  }, [baseline, ampRatio, fixedColor, alpha.light, alpha.dark]);
 
   return (
-    <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 text-primary">
+    <div
+      ref={wrapperRef}
+      aria-hidden="true"
+      className={cn('pointer-events-none text-primary', className)}
+      style={fixedColor ? { color: fixedColor } : undefined}
+    >
       <canvas ref={canvasRef} className="absolute inset-0 size-full" />
       <div ref={headRef} className="absolute top-0 left-0 will-change-transform">
         <span className="absolute -top-1 -left-1 size-2 rounded-full bg-current opacity-60 shadow-[0_0_12px_4px_currentColor]" />

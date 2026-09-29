@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
 import { z } from 'zod';
-import { AuthCard, FormError } from '@/components/AuthCard';
+import { AuthShell } from '@/components/AuthShell';
+import { FormError } from '@/components/FormError';
 import { FormField } from '@/components/FormField';
 import { PasswordInput } from '@/components/PasswordInput';
 import { Button } from '@/components/ui/button';
@@ -48,19 +49,31 @@ export function SignInPage() {
   });
 
   return (
-    <AuthCard
-      title="Sign in to Sentry"
-      subtitle="Welcome back. Check on your websites’ security."
-      footer={
+    <AuthShell
+      panel={
         <>
-          New to Sentry?{' '}
-          <Link to="/sign-up" className="font-semibold text-primary underline-offset-4 hover:underline">
-            Create an account
-          </Link>
+          <h2 className="font-display text-[2rem] leading-[1.08] font-bold tracking-tight lg:text-5xl lg:leading-[1.06]">
+            Welcome back.
+          </h2>
+          <p className="hidden text-lg text-[#a9bbd6] lg:block">
+            Pick up where you left off: your websites’ security, explained in plain English.
+          </p>
         </>
       }
+      switchLink={
+        <>
+          <span className="hidden lg:inline">New to Sentry? </span>
+          <Link to="/sign-up">Create an account</Link>
+        </>
+      }
+      points={['Only websites you own', 'Gentle checks', 'Your content stays yours']}
     >
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+        <div className="flex flex-col gap-1.5">
+          <h1 className="font-display text-[1.75rem] font-bold tracking-tight lg:text-[2.125rem]">Sign in</h1>
+          <p className="text-muted-foreground">Use the email you signed up with.</p>
+        </div>
+
         <FormError message={formError} />
 
         <FormField id="email" label="Email" error={errors.email?.message}>
@@ -84,11 +97,16 @@ export function SignInPage() {
           />
         </FormField>
 
-        <Button type="submit" size="lg" disabled={isSubmitting} aria-busy={isSubmitting}>
-          {isSubmitting && <Loader2 className="animate-spin" aria-hidden="true" />}
+        <Button type="submit" size="lg" disabled={isSubmitting} aria-busy={isSubmitting} className="group">
+          {isSubmitting ? (
+            <Loader2 className="animate-spin" aria-hidden="true" />
+          ) : null}
           {isSubmitting ? 'Signing in…' : 'Sign in'}
+          {!isSubmitting && (
+            <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
+          )}
         </Button>
       </form>
-    </AuthCard>
+    </AuthShell>
   );
 }

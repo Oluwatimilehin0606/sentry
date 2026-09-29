@@ -20,9 +20,10 @@ export function App() {
           {/* Anyone can see these. */}
           <Route element={<PublicLayout />}>
             <Route index element={<LandingPage />} />
-            <Route path="sign-in" element={<SignInPage />} />
-            <Route path="sign-up" element={<SignUpPage />} />
           </Route>
+          {/* Sign-in and sign-up bring their own split-screen frame. */}
+          <Route path="sign-in" element={<SignInPage />} />
+          <Route path="sign-up" element={<SignUpPage />} />
 
           {/* Using Sentry needs an account. */}
           <Route element={<RequireAuth />}>

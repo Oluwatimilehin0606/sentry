@@ -13,7 +13,7 @@ import {
 import { useEffect, type CSSProperties, type ReactNode } from 'react';
 import { Link, Navigate, useLocation } from 'react-router';
 import { ExampleReport } from '@/components/landing/ExampleReport';
-import { MonitorWave } from '@/components/landing/MonitorWave';
+import { MonitorWave } from '@/components/MonitorWave';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/lib/auth-client';
 import { useScrollReveal } from '@/lib/motion';
