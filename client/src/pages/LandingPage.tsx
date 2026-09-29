@@ -65,7 +65,7 @@ const STEPS = [
 ];
 const STEP_MS = 450;
 
-const CHECKS: { Icon: LucideIcon; title: string; body: string; comingNext?: boolean }[] = [
+const CHECKS: { Icon: LucideIcon; title: string; body: string }[] = [
   {
     Icon: LockKeyhole,
     title: 'Secure connection',
@@ -79,8 +79,7 @@ const CHECKS: { Icon: LucideIcon; title: string; body: string; comingNext?: bool
   {
     Icon: FileWarning,
     title: 'Exposed private files',
-    body: 'Can anyone download files that should stay private, like password settings or database backups?',
-    comingNext: true,
+    body: 'Can anyone download files that should stay private, like password settings, database backups or your site’s code?',
   },
 ];
 
@@ -93,12 +92,12 @@ const SAFETY: { Icon: LucideIcon; title: string; body: string }[] = [
   {
     Icon: Activity,
     title: 'Gentle checks',
-    body: 'Sentry looks at your site the way a normal visitor’s browser does. It never tries to break in or slow your site down.',
+    body: 'Sentry visits your homepage and asks for a short list of files that should never be public, two at a time. It never tries to break in or slow your site down.',
   },
   {
     Icon: EyeOff,
     title: 'Your content stays yours',
-    body: 'Sentry reads your site’s security settings only. It never downloads or stores your pages or your customers’ data.',
+    body: 'Sentry never stores your pages or your customers’ data. If it finds a private file, your report says where it is, never what’s inside.',
   },
 ];
 
@@ -263,19 +262,12 @@ function WhatWeCheck() {
       <Container className="flex flex-col gap-8 py-16 sm:gap-12 sm:py-26">
         <SectionHeading eyebrow="What we check" title="The gaps attackers look for first" id="checks-h" />
         <div className="grid gap-3.5 sm:gap-6 lg:grid-cols-3">
-          {CHECKS.map(({ Icon, title, body, comingNext }, i) => (
+          {CHECKS.map(({ Icon, title, body }, i) => (
             <div key={title} data-reveal style={delay(i)} className="reveal">
               <article className={cn('flex h-full flex-col gap-3 rounded-[14px] border bg-background p-5 sm:gap-3.5 sm:p-7', hoverLift)}>
-                <div className="flex items-center justify-between">
-                  <span className="grid size-10 place-items-center rounded-[10px] bg-primary-soft text-primary sm:size-11">
-                    <Icon className="size-5 sm:size-5.5" aria-hidden="true" />
-                  </span>
-                  {comingNext && (
-                    <span className="rounded-full bg-muted px-2.5 py-1 text-[0.8125rem] font-semibold text-muted-foreground">
-                      Coming next
-                    </span>
-                  )}
-                </div>
+                <span className="grid size-10 place-items-center rounded-[10px] bg-primary-soft text-primary sm:size-11">
+                  <Icon className="size-5 sm:size-5.5" aria-hidden="true" />
+                </span>
                 <h3 className="text-lg font-semibold sm:text-xl">{title}</h3>
                 <p className="text-[0.9375rem] text-muted-foreground sm:text-base">{body}</p>
               </article>

@@ -112,7 +112,7 @@ function Checking({ hostname }: { hostname: string }) {
         Checking {hostname}…
       </div>
       <ul className="flex flex-col gap-3 text-[0.9375rem] text-muted-foreground">
-        {['Secure connection', 'Security certificate', 'Browser protections'].map((label, i) => (
+        {['Secure connection', 'Security certificate', 'Browser protections', 'Private files'].map((label, i) => (
           <li key={label} className="flex items-center gap-3">
             <span
               className="size-4 animate-[soft-pulse_1.2s_ease-in-out_infinite] rounded-full border-2 border-border"
@@ -123,6 +123,7 @@ function Checking({ hostname }: { hostname: string }) {
           </li>
         ))}
       </ul>
+      <p className="text-sm text-muted-foreground">This takes about 10 seconds.</p>
     </div>
   );
 }
