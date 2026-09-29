@@ -10,10 +10,10 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, type CSSProperties, type ReactNode } from 'react';
 import { Link, Navigate, useLocation } from 'react-router';
 import { ExampleReport } from '@/components/landing/ExampleReport';
-import { PulseLine } from '@/components/landing/PulseLine';
+import { MonitorWave } from '@/components/landing/MonitorWave';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/lib/auth-client';
 import { useScrollReveal } from '@/lib/motion';
@@ -148,7 +148,7 @@ function Hero() {
 
 function PlainEnglish() {
   return (
-    <section aria-labelledby="plain-h" className="border-y bg-card">
+    <section aria-labelledby="plain-h" className="border-y bg-card/75">
       <Container className="flex flex-col gap-8 py-16 sm:gap-12 sm:py-26">
         <SectionHeading eyebrow="Why Sentry" title="Plain English, not jargon" id="plain-h">
           Most security scanners are built for experts. Sentry explains the same problem the way a knowledgeable friend
@@ -259,7 +259,7 @@ function HowItWorks() {
 
 function WhatWeCheck() {
   return (
-    <section id="checks" aria-labelledby="checks-h" className="scroll-mt-4 border-y bg-card">
+    <section id="checks" aria-labelledby="checks-h" className="scroll-mt-4 border-y bg-card/75">
       <Container className="flex flex-col gap-8 py-16 sm:gap-12 sm:py-26">
         <SectionHeading eyebrow="What we check" title="The gaps attackers look for first" id="checks-h" />
         <div className="grid gap-3.5 sm:gap-6 lg:grid-cols-3">
@@ -350,7 +350,6 @@ export function LandingPage() {
   // Set by "Sign out": stay here while the session is being ended instead of bouncing to /home.
   const signingOut = (state as { signedOut?: boolean } | null)?.signedOut === true;
   const showLanding = !(!isPending && session && !signingOut);
-  const pageRef = useRef<HTMLDivElement>(null);
 
   useScrollReveal([showLanding]);
 
@@ -363,9 +362,10 @@ export function LandingPage() {
   if (!showLanding) return <Navigate to="/home" replace />;
 
   return (
-    // Sections must stay direct children: the heartbeat line places its beats at their boundaries.
-    <div ref={pageRef} className="relative overflow-x-clip">
-      <PulseLine containerRef={pageRef} />
+    // The heart-monitor wave is fixed behind everything; sections sit above it (z-1), and the
+    // tinted sections are slightly see-through so the trace shows faintly behind them.
+    <div className="relative overflow-x-clip [&>section]:relative [&>section]:z-[1]">
+      <MonitorWave />
       <Hero />
       <PlainEnglish />
       <HowItWorks />
