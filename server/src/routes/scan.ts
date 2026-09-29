@@ -24,7 +24,7 @@ scanRouter.use(
 
 const Body = z.object({ domain: z.string().max(300) });
 
-const STATUS_FOR = { NOT_FOUND: 422, BLOCKED: 400, UNREACHABLE: 422 } as const;
+const STATUS_FOR = { NOT_FOUND: 422, BLOCKED: 400, UNREACHABLE: 422, TIMEOUT: 504 } as const;
 
 scanRouter.post('/', async (req, res, next) => {
   const parsed = Body.safeParse(req.body);

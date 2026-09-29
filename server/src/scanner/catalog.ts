@@ -44,6 +44,17 @@ export const CATALOG = {
     howToFix:
       'Renew it now in your host’s SSL settings, and switch on auto-renewal so this doesn’t happen again.',
   },
+  'tls.legacy_protocol': {
+    severity: 'low',
+    title: 'Your site still accepts outdated secure connections',
+    passTitle: 'Your site only accepts modern secure connections',
+    whatItIs:
+      'Your site still agrees to connect using TLS 1.0 or 1.1, old versions of the technology behind “https://” that browsers stopped using in 2020.',
+    whyItMatters:
+      'These old versions have known weaknesses. Up-to-date browsers won’t use them, but visitors on old phones or computers can end up on a weaker connection. Payment card rules (PCI DSS) also forbid them if you take card payments.',
+    howToFix:
+      'In your host’s or Cloudflare’s SSL/TLS settings, set the minimum TLS version to 1.2. On your own server, allow only TLS 1.2 and 1.3 (for example “ssl_protocols TLSv1.2 TLSv1.3;” in Nginx).',
+  },
   'http.no_https_redirect': {
     severity: 'medium',
     title: 'Visitors aren’t moved to the secure version of your site',
@@ -116,6 +127,81 @@ export const CATALOG = {
       'Attackers use version numbers to look up known weaknesses and pick targets running old, unpatched software.',
     howToFix:
       'Hide version details in your server settings (for example “ServerTokens Prod” in Apache, “server_tokens off” in Nginx, “expose_php = Off” for PHP) and keep the software up to date.',
+  },
+  'path.env_exposed': {
+    severity: 'critical',
+    title: 'Your private settings file is public',
+    passTitle: 'Your private settings file (.env) isn’t public',
+    whatItIs:
+      'A file called “.env” on your site can be downloaded by anyone. It usually holds the passwords and keys that connect your site to its database, email and payment services.',
+    whyItMatters:
+      'Attackers scan the internet for this file automatically. With it they could log into your database, send email as you or reach your payment account.',
+    howToFix:
+      'Remove the file from your public web folder (or block it in your server settings) today. Then change every password and key it contained, because you can’t know who already copied them. Ask your host or developer if you’re not sure where it is.',
+  },
+  'path.git_exposed': {
+    severity: 'critical',
+    title: 'Your site’s source code can be downloaded',
+    passTitle: 'Your site’s source code history isn’t public',
+    whatItIs:
+      'The hidden “.git” folder, where your developer’s tools keep the full history of your site’s code, can be read by anyone.',
+    whyItMatters:
+      'Free tools can rebuild your whole codebase from it, including any passwords or keys ever saved in it, and show attackers exactly how your site works.',
+    howToFix:
+      'Delete the .git folder from the live site or block access to it in your server settings (for example “location ~ /\\.git { deny all; }” in Nginx). Then change any passwords or keys that were ever in the code.',
+  },
+  'path.htpasswd_exposed': {
+    severity: 'critical',
+    title: 'Your password file is public',
+    passTitle: 'Your password file (.htpasswd) isn’t public',
+    whatItIs:
+      'The “.htpasswd” file, which stores usernames and scrambled passwords for protected parts of your site, can be downloaded by anyone.',
+    whyItMatters:
+      'Scrambled passwords can often be cracked, especially short ones. Attackers then get into the areas the file was meant to protect.',
+    howToFix:
+      'Move the file outside your public web folder, or block access to it. Then set new passwords for every account in it.',
+  },
+  'path.backup_exposed': {
+    severity: 'critical',
+    title: 'A backup of your site is public',
+    passTitle: 'No site or database backups are public',
+    whatItIs:
+      'A backup file (such as a database export, a zip of your site or a copy of your WordPress settings) sits in your public web folder where anyone can download it.',
+    whyItMatters:
+      'Backups often contain everything: customer details, orders, admin accounts and database passwords. It’s like leaving a copy of your filing cabinet on the pavement.',
+    howToFix:
+      'Delete the backup from the web folder today and keep backups somewhere private (your host’s backup tool or offline storage). If it held passwords or customer data, change the passwords and ask your developer whether anyone downloaded it.',
+  },
+  'path.debug_page_exposed': {
+    severity: 'medium',
+    title: 'A technical information page is public',
+    passTitle: 'No technical information pages are public',
+    whatItIs:
+      'A page meant for developers (such as “phpinfo” or Apache’s “server-status”) is open to everyone. It lists your server’s software, versions, settings and sometimes visitor activity.',
+    whyItMatters:
+      'It hands attackers a detailed map of your server, making it much easier to find a weakness to exploit.',
+    howToFix:
+      'Delete the page (for phpinfo, the .php file that shows it), or restrict it to your own IP address in your server settings.',
+  },
+  'path.db_admin_exposed': {
+    severity: 'medium',
+    title: 'Your database admin login is open to everyone',
+    passTitle: 'Your database admin tool isn’t publicly reachable',
+    whatItIs: 'The login page for phpMyAdmin, a tool that gives full control of your database, can be reached by anyone on the internet.',
+    whyItMatters:
+      'Attackers constantly try common passwords on these pages. One weak or reused password gives them every record in your database.',
+    howToFix:
+      'Remove phpMyAdmin from the public site if you don’t need it, or limit it to your own IP address or put it behind your host’s control panel login.',
+  },
+  'path.ds_store_exposed': {
+    severity: 'low',
+    title: 'A Mac folder listing file is public',
+    passTitle: 'No Mac folder listing files are public',
+    whatItIs:
+      'A “.DS_Store” file, created automatically by Macs, was uploaded to your site. It lists the names of the files in that folder.',
+    whyItMatters:
+      'It can reveal hidden files and folders (like old backups or admin pages) that attackers would otherwise have to guess.',
+    howToFix: 'Delete the .DS_Store files from your web folder and tell your upload tool or developer to skip them.',
   },
 } satisfies Record<string, CatalogEntry>;
 

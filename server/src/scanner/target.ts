@@ -47,7 +47,7 @@ export function isBlockedAddress(address: string): boolean {
 }
 
 export class ScanTargetError extends Error {
-  readonly code: 'NOT_FOUND' | 'BLOCKED' | 'UNREACHABLE';
+  readonly code: 'NOT_FOUND' | 'BLOCKED' | 'UNREACHABLE' | 'TIMEOUT';
 
   constructor(code: ScanTargetError['code'], message: string) {
     super(message);

@@ -5,9 +5,12 @@ import {
   evaluateTlsError,
   type Finding,
 } from './checks.ts';
-import { fetchHead, type HttpResult } from './http.ts';
+import { publicContext, SCAN_BUDGET_MS, siteUrl, type ScanContext } from './context.ts';
+import { fetchUrl, type HttpResult } from './http.ts';
+import { checkLegacyTls } from './legacy-tls.ts';
+import { probePaths } from './paths.ts';
 import { scoreFindings } from './score.ts';
-import { assertPublicHost, ScanTargetError } from './target.ts';
+import { ScanTargetError } from './target.ts';
 
 const MAX_REDIRECTS = 3;
 const SEVERITY_RANK = { critical: 0, medium: 1, low: 2 } as const;
@@ -18,10 +21,10 @@ function isSameSite(target: URL, hostname: string): boolean {
   return host === hostname || host === `www.${hostname}` || `www.${host}` === hostname;
 }
 
-async function fetchHomepage(hostname: string): Promise<HttpResult> {
-  let url = new URL(`https://${hostname}/`);
+async function fetchHomepage(ctx: ScanContext, hostname: string): Promise<HttpResult> {
+  let url = siteUrl(ctx, 'https', hostname);
   for (let hop = 0; ; hop++) {
-    const res = await fetchHead(url);
+    const res = await fetchUrl(ctx, url);
     const location = res.headers.location;
     if (res.status < 300 || res.status >= 400 || !location || hop >= MAX_REDIRECTS) return res;
     const next = new URL(location, url);
@@ -30,9 +33,11 @@ async function fetchHomepage(hostname: string): Promise<HttpResult> {
   }
 }
 
-async function checkHttpRedirect(hostname: string): Promise<Finding> {
+const HTTP_CLOSED = 'Plain HTTP (port 80) is closed';
+
+async function checkHttpRedirect(ctx: ScanContext, hostname: string): Promise<Finding> {
   try {
-    const res = await fetchHead(new URL(`http://${hostname}/`));
+    const res = await fetchUrl(ctx, siteUrl(ctx, 'http', hostname));
     const location = res.headers.location ?? '';
     if (res.status >= 300 && res.status < 400 && location.startsWith('https://')) {
       return { checkId: 'http.no_https_redirect', status: 'pass', evidence: `http:// → ${res.status} → ${location}` };
@@ -44,48 +49,75 @@ async function checkHttpRedirect(hostname: string): Promise<Finding> {
     };
   } catch {
     // Nothing served over plain HTTP at all, so there's nothing insecure to redirect.
-    return { checkId: 'http.no_https_redirect', status: 'pass', evidence: 'Plain HTTP (port 80) is closed' };
+    return { checkId: 'http.no_https_redirect', status: 'pass', evidence: HTTP_CLOSED };
   }
 }
 
-export async function scanHost(hostname: string) {
+/** Where to look for exposed files: the secure homepage, or plain HTTP if that's all that works. */
+function probeOrigin(ctx: ScanContext, hostname: string, home: HttpResult | null, httpCheck: Finding): URL | null {
+  if (home) return new URL(home.url.origin);
+  if (httpCheck.status === 'fail') return new URL(siteUrl(ctx, 'http', hostname).origin);
+  return null;
+}
+
+export function scanHost(hostname: string, ctx: ScanContext = publicContext()) {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new ScanTargetError('TIMEOUT', `Checking ${hostname} took too long. The site may be slow right now; try again in a few minutes.`)),
+      SCAN_BUDGET_MS,
+    );
+  });
+  return Promise.race([runScan(hostname, ctx), timeout]).finally(() => clearTimeout(timer));
+}
+
+async function runScan(hostname: string, ctx: ScanContext) {
   const started = Date.now();
-  await assertPublicHost(hostname);
+  await ctx.assertTarget(hostname);
 
   const findings: Finding[] = [];
   let finalUrl: string | undefined;
+  let home: HttpResult | null = null;
+  let httpsAnswered = false;
 
   try {
-    const home = await fetchHomepage(hostname);
+    home = await fetchHomepage(ctx, hostname);
+    httpsAnswered = true;
     finalUrl = home.url.href;
     findings.push(
-      { checkId: 'tls.no_https', status: 'pass', evidence: `https://${hostname}/ answered ${home.status}` },
+      { checkId: 'tls.no_https', status: 'pass', evidence: `${siteUrl(ctx, 'https', hostname).href} answered ${home.status}` },
       { checkId: 'tls.cert_invalid', status: 'pass', evidence: home.certificate?.issuer?.O ? `Issued by ${home.certificate.issuer.O}` : undefined },
       ...evaluateCertificate(home.certificate),
       ...evaluateHeaders(home.headers),
     );
-    findings.push(await checkHttpRedirect(hostname));
   } catch (err) {
     if (err instanceof ScanTargetError) throw err;
     const tlsFinding = evaluateTlsError(err as NodeJS.ErrnoException);
     if (tlsFinding) {
+      httpsAnswered = true;
       findings.push({ checkId: 'tls.no_https', status: 'pass' }, tlsFinding);
-    } else {
-      // HTTPS didn't answer at all. If plain HTTP doesn't either, the site is simply down.
-      const httpCheck = await checkHttpRedirect(hostname);
-      if (httpCheck.evidence === 'Plain HTTP (port 80) is closed') {
-        throw new ScanTargetError(
-          'UNREACHABLE',
-          `We couldn’t reach ${hostname}. Check the website is online and try again.`,
-        );
-      }
-      findings.push({
-        checkId: 'tls.no_https',
-        status: 'fail',
-        evidence: `https://${hostname}/ didn’t answer (${(err as NodeJS.ErrnoException).code ?? 'no response'})`,
-      });
     }
   }
+
+  const httpCheck = await checkHttpRedirect(ctx, hostname);
+  if (!httpsAnswered) {
+    // HTTPS didn't answer at all. If plain HTTP doesn't either, the site is simply down.
+    if (httpCheck.evidence === HTTP_CLOSED) {
+      throw new ScanTargetError('UNREACHABLE', `We couldn’t reach ${hostname}. Check the website is online and try again.`);
+    }
+    findings.push({ checkId: 'tls.no_https', status: 'fail', evidence: `https://${hostname}/ didn’t answer` });
+  } else {
+    findings.push(httpCheck);
+  }
+
+  // The slower checks run side by side.
+  const origin = probeOrigin(ctx, hostname, home, httpCheck);
+  const [legacy, paths] = await Promise.all([
+    httpsAnswered ? checkLegacyTls(ctx, hostname) : null,
+    origin ? probePaths(ctx, origin) : [],
+  ]);
+  if (legacy) findings.push(legacy);
+  findings.push(...paths);
 
   const { score, grade, summary } = scoreFindings(findings);
 
@@ -117,4 +149,4 @@ export async function scanHost(hostname: string) {
   };
 }
 
-export type ScanReport = Awaited<ReturnType<typeof scanHost>>;
+export type ScanReport = Awaited<ReturnType<typeof runScan>>;

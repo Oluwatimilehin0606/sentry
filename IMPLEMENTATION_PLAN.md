@@ -150,6 +150,10 @@ The core of the product. Built as a **standalone library** in `server/src/scanne
 - Unit tests for every check ID (pass and fail cases) against the fixture server.
 - SSRF tests: `localhost`, `127.0.0.1`, `10.x`, `169.254.169.254` and a DNS name resolving to a private IP are all rejected.
 
+> **Phase 2 status (2026-09-29): scanner done; website wording waiting on mockup approval.** New: `tls.legacy_protocol` (a separate TLS 1.0/1.1-only handshake), the exposed-files probe (`server/src/scanner/paths.ts`: 16 paths, 2 at a time, 200 ms apart, 5 s timeout, first 16 KB only, no redirects followed; a random "can't exist" address first to spot sites that answer everything with a page, and a content test per file), a 60-second budget per scan, and `npm run scan -- example.com`. A local fixture site (`server/test/fixture-server.ts`: its own test certificate authority, configurable certificates, headers, files and old-TLS support) drives 13 end-to-end tests; the real SSRF guard stays on for every real scan.
+>
+> Decisions: exposed files are reported **one finding per kind** (`.env`, `.git`, password file, backups, debug pages, phpMyAdmin, `.DS_Store`), not per path, so one leaky folder doesn't sink the score seven times. `tls.legacy_protocol` is **low**, not medium: google.com, cloudflare.com and example.com all still accept TLS 1.1 for old devices, and modern browsers never use it. `/admin` and `/wp-admin/` are **not** flagged: a reachable login page is normal (every WordPress site has one), so it would be a false alarm.
+
 ---
 
 ## Phase 3 — Plain-English Catalog & Risk Scoring (Days 9–12)

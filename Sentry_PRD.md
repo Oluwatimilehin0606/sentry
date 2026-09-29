@@ -145,6 +145,13 @@ There is no low-cost, low-friction tool that tells a non-technical business owne
 > - **Home (`/home`, signed in):** dashboard with a greeting and large check bar, recent checks (kept in the browser until scans are saved in Phase 5), the latest report, **"Your next step"** (the single fix that raises the grade most), "Your websites" (coming soon) and how grades work.
 > - **Quality bar:** Lighthouse on the production build scores 100 on desktop for accessibility, best practices and SEO (performance 99–100); on phones, 100 on those three and ~81–92 for performance. Fonts are self-hosted.
 
+> **Note — Scanner checks added in Phase 2 (2026-09-29)**
+>
+> - **Exposed files:** one finding per kind of file, each with its own plain-English explanation: settings file (`.env`), code history (`.git`), password file (`.htpasswd`), backups (database dumps, site zips, WordPress settings copies) (all **critical**); developer information pages (`phpinfo`, `server-status`) and a public phpMyAdmin login (**medium**); Mac `.DS_Store` listings (**low**). A file only counts as exposed if its content looks real, so sites that answer every address with a normal page don't get false alarms. Reports show where the file is, never what's inside.
+> - **Admin login pages** (`/admin`, `/wp-admin/`) are not flagged: having one is normal and would be a false alarm for every WordPress site.
+> - **Outdated TLS (1.0/1.1)** is **low**: worth fixing (and required for card payments), but modern browsers never use it, and many large sites still accept it.
+> - A scan stops after **60 seconds** and says the site was too slow.
+
 ---
 
 ## 8. Risk Scoring Model (proposed)

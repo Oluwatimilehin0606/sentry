@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "typecheck": "npm run typecheck -w server && npm run typecheck -w client",
     "test": "npm run test -w server && npm run test -w client",
+    "scan": "npm run scan -w server --",
     "format": "prettier --write .",
     "db:create": "npm run db:create -w server",
     "db:generate": "npm run db:generate -w server",
