@@ -2,26 +2,64 @@ import { useEffect, useRef } from 'react';
 import { motionEnabled } from '@/lib/motion';
 
 /**
- * A subtle heart-monitor trace behind the landing page. A bright point sweeps left to right,
- * drawing a smooth heartbeat; the trace behind it fades, and at the right edge it wraps round,
- * like a hospital monitor. Fixed to the viewport, so the page scrolls over it.
+ * A subtle heart-monitor trace behind the landing page. A glowing point sweeps left to right,
+ * drawing an ECG: flat baseline, then sharp heartbeat spikes of varying height. Like a real
+ * monitor, a band just ahead of the point is wiped as it moves, so when the sweep wraps round
+ * the new trace never overlaps the old one. Fixed to the viewport, so the page scrolls over it.
  * With reduce-motion it draws one still, faint trace instead.
  */
 
 const SPEED = 170; // px per second
 const MAX_DPR = 2;
 
-/** Smooth heartbeat shape for one beat, phase 0..1 → vertical offset (-1..1, up is negative). */
-function beat(phase: number): number {
-  const g = (center: number, width: number, height: number) =>
-    height * Math.exp(-((phase - center) ** 2) / (2 * width * width));
-  return (
-    g(0.2, 0.035, -0.12) + // P wave: small soft bump
-    g(0.42, 0.018, 0.14) + // dip before the beat
-    g(0.47, 0.022, -1) + // main beat, rounded rather than spiky
-    g(0.53, 0.024, 0.32) + // rebound
-    g(0.74, 0.06, -0.24) // T wave: wide gentle bump
-  );
+/** One heartbeat (PQRST) as [x, y] points; y is in beat units, up is negative. Sharp corners. */
+const COMPLEX: [number, number][] = [
+  [0, 0],
+  [8, -0.14], // P: small bump
+  [16, 0],
+  [30, 0],
+  [34, 0.16], // Q: small dip
+  [42, -1], // R: tall sharp spike
+  [50, 0.55], // S: sharp dip below the line
+  [56, 0],
+  [80, 0],
+  [92, -0.2], // T: small bump
+  [104, 0],
+];
+const COMPLEX_WIDTH = 104;
+
+/**
+ * The repeating strip: beats of different heights with flat baseline between them, like the
+ * example (small, tall, medium, tall, then a small blip). Starts are ≥ 190 apart and each beat is
+ * 104 wide, so beats never run into each other.
+ */
+const STRIP: { at: number; height: number }[] = [
+  { at: 60, height: 0.45 },
+  { at: 260, height: 1 },
+  { at: 470, height: 0.7 },
+  { at: 660, height: 0.95 },
+  { at: 860, height: 0.28 },
+];
+const STRIP_LENGTH = 1060;
+
+function complexAt(u: number): number {
+  for (let i = 1; i < COMPLEX.length; i++) {
+    const [x1, y1] = COMPLEX[i]!;
+    if (u <= x1) {
+      const [x0, y0] = COMPLEX[i - 1]!;
+      return y0 + ((y1 - y0) * (u - x0)) / (x1 - x0);
+    }
+  }
+  return 0;
+}
+
+/** Vertical offset of the trace (in beat units) at strip position u. */
+function stripAt(u: number): number {
+  for (const beat of STRIP) {
+    const local = u - beat.at;
+    if (local >= 0 && local <= COMPLEX_WIDTH) return beat.height * complexAt(local);
+  }
+  return 0;
 }
 
 function readColor(): string {
@@ -41,13 +79,17 @@ export function MonitorWave() {
 
     let width = 0;
     let height = 0;
-    let period = 0; // px per heartbeat
-    let amp = 0; // px
+    let scaleX = 1; // strip units → px
+    let amp = 0; // px for a full-height spike
     let baseY = 0;
+    let eraseBand = 0; // px wiped ahead of the head
     let color = readColor();
     const isDark = () => document.documentElement.classList.contains('dark');
 
-    const yAt = (x: number) => baseY + amp * beat(((x % period) + period) % period / period);
+    const yAt = (x: number) => {
+      const u = (((x / scaleX) % STRIP_LENGTH) + STRIP_LENGTH) % STRIP_LENGTH;
+      return baseY + amp * stripAt(u);
+    };
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
@@ -56,28 +98,39 @@ export function MonitorWave() {
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      period = Math.max(260, Math.min(420, width / 3.2));
-      amp = Math.max(28, Math.min(64, height * 0.07));
+      scaleX = Math.max(0.75, Math.min(1.25, width / 1200));
+      amp = Math.max(34, Math.min(84, height * 0.09));
       baseY = height * 0.52;
-      ctx.lineJoin = 'round';
+      eraseBand = Math.max(80, width * 0.12);
+      ctx.lineJoin = 'miter';
+      ctx.miterLimit = 4;
       ctx.lineCap = 'round';
     };
 
-    const strokeAlpha = () => (isDark() ? 0.32 : 0.22);
+    const strokeAlpha = () => (isDark() ? 0.4 : 0.28);
+
+    const setStroke = () => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.6;
+      ctx.globalAlpha = strokeAlpha();
+      // A soft neon glow, kept faint so the trace stays in the background.
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 6;
+    };
 
     // Reduce-motion: one still, faint trace across the screen.
     const drawStill = () => {
       ctx.clearRect(0, 0, width, height);
-      ctx.globalAlpha = strokeAlpha() * 0.7;
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1.5;
+      setStroke();
+      ctx.globalAlpha = strokeAlpha() * 0.8;
       ctx.beginPath();
-      for (let x = 0; x <= width; x += 2) {
+      for (let x = 0; x <= width; x += 1) {
         if (x === 0) ctx.moveTo(x, yAt(x));
         else ctx.lineTo(x, yAt(x));
       }
       ctx.stroke();
       ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
     };
 
     resize();
@@ -97,40 +150,48 @@ export function MonitorWave() {
     let last = performance.now();
     let frame = 0;
 
+    /** Wipe the band just ahead of the head (wrapping at the right edge). */
+    const eraseAhead = (headX: number) => {
+      const start = headX + 3;
+      const end = start + eraseBand;
+      ctx.clearRect(start, 0, Math.min(end, width) - start, height);
+      if (end > width) ctx.clearRect(0, 0, end - width, height);
+    };
+
     const tick = (now: number) => {
       // Cap the step so a background tab doesn't jump the trace when it comes back.
       const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
       last = now;
 
-      // Fade everything drawn so far a little: the monitor's trailing glow.
+      // A gentle fade, so the oldest part of the trace (just ahead of the wipe) is the dimmest.
       ctx.globalCompositeOperation = 'destination-out';
-      ctx.fillStyle = `rgba(0,0,0,${Math.min(1, dt * 0.5)})`;
+      ctx.fillStyle = `rgba(0,0,0,${Math.min(1, dt * 0.12)})`;
       ctx.fillRect(0, 0, width, height);
       ctx.globalCompositeOperation = 'source-over';
 
       const from = head;
       const to = head + SPEED * dt;
 
-      // Clear a narrow band just ahead of the head, like the gap on a real monitor.
-      ctx.clearRect(to % width, 0, 22, height);
-
-      ctx.strokeStyle = color;
-      ctx.globalAlpha = strokeAlpha();
-      ctx.lineWidth = 1.75;
+      setStroke();
       ctx.beginPath();
-      for (let x = from; x <= to; x += 1.5) {
+      let prevSx = Infinity;
+      for (let x = from; x <= to; x += 1) {
         const sx = x % width;
-        if (x === from || sx < (x - 1.5) % width) ctx.moveTo(sx, yAt(x));
+        if (sx < prevSx) ctx.moveTo(sx, yAt(x)); // first point, or wrapped round to the left
         else ctx.lineTo(sx, yAt(x));
+        prevSx = sx;
       }
-      ctx.lineTo(to % width, yAt(to));
+      const toX = to % width;
+      if (toX >= prevSx) ctx.lineTo(toX, yAt(to));
       ctx.stroke();
-
       ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+
+      eraseAhead(toX);
 
       // The glowing point at the head is a separate element (moved on the compositor), so it
-      // doesn't smear into the fading trace.
-      if (head$) head$.style.transform = `translate3d(${(to % width).toFixed(1)}px, ${yAt(to).toFixed(1)}px, 0)`;
+      // doesn't smear into the trace.
+      if (head$) head$.style.transform = `translate3d(${toX.toFixed(1)}px, ${yAt(to).toFixed(1)}px, 0)`;
 
       head = to;
       frame = requestAnimationFrame(tick);
@@ -163,7 +224,7 @@ export function MonitorWave() {
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 text-primary">
       <canvas ref={canvasRef} className="absolute inset-0 size-full" />
       <div ref={headRef} className="absolute top-0 left-0 will-change-transform">
-        <span className="absolute -top-1 -left-1 size-2 rounded-full bg-current opacity-45 shadow-[0_0_10px_3px_currentColor]" />
+        <span className="absolute -top-1 -left-1 size-2 rounded-full bg-current opacity-60 shadow-[0_0_12px_4px_currentColor]" />
       </div>
     </div>
   );
