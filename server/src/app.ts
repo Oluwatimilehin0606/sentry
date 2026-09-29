@@ -22,7 +22,12 @@ export function createApp() {
         res: (res: { statusCode: number }) => ({ statusCode: res.statusCode }),
       },
       customLogLevel: (_req, res, err) => (err || res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info'),
-      // The status badge polls /api/health; only log it when something is wrong.
+      // originalUrl: inside a router Express shortens req.url (e.g. /api/me becomes /).
+      customSuccessMessage: (req, res, ms) =>
+        `${req.method} ${(req as express.Request).originalUrl} → ${res.statusCode} (${Math.round(ms)} ms)`,
+      customErrorMessage: (req, res, err) =>
+        `${req.method} ${(req as express.Request).originalUrl} → ${res.statusCode} failed: ${err.message}`,
+      // The status badge polls /api/health every few seconds; don't fill the log with it.
       autoLogging: { ignore: (req) => req.url === '/api/health' },
     }),
   );

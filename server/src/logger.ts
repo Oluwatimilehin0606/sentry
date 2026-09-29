@@ -7,6 +7,10 @@ export const logger = pino({
   redact: ['req.headers.cookie', 'req.headers.authorization', 'res.headers["set-cookie"]', 'headers.cookie'],
   transport:
     env.NODE_ENV === 'development'
-      ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'HH:MM:ss' } }
+      ? {
+          target: 'pino-pretty',
+          // Request details are already in the message line, so don't repeat them underneath.
+          options: { colorize: true, translateTime: 'SYS:HH:MM:ss', ignore: 'pid,hostname,req,res,responseTime' },
+        }
       : undefined,
 });
