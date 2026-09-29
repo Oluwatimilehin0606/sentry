@@ -154,4 +154,21 @@ describe('POST /api/scan', () => {
     const res = await agent.post('/api/scan').send({ domain: 'localhost.' });
     expect(res.status).toBe(400);
   });
+
+  it('streams progress lines when asked, ending with the result', async () => {
+    const res = await agent
+      .post('/api/scan')
+      .set('Accept', 'application/x-ndjson')
+      .send({ domain: 'no-such-site.example' })
+      .buffer(true)
+      .parse((r, done) => {
+        let text = '';
+        r.on('data', (c: Buffer) => (text += c.toString()));
+        r.on('end', () => done(null, text));
+      });
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/application\/x-ndjson/);
+    const lines = (res.body as string).trim().split('\n').map((l) => JSON.parse(l));
+    expect(lines.at(-1)).toMatchObject({ type: 'error', code: 'NOT_FOUND' });
+  });
 });

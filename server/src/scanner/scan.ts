@@ -13,6 +13,13 @@ import { scoreFindings } from './score.ts';
 import { ScanTargetError } from './target.ts';
 
 const MAX_REDIRECTS = 3;
+
+/** The four parts of a scan the home page shows ticking off, in display order. */
+export const SCAN_STEPS = ['connection', 'certificate', 'protections', 'files'] as const;
+export type ScanStep = (typeof SCAN_STEPS)[number];
+/** "done" means the part was checked (not that it passed); "skipped" means it couldn't run. */
+export type ScanProgress = { step: ScanStep; status: 'done' | 'skipped'; note?: string };
+export type OnProgress = (progress: ScanProgress) => void;
 const SEVERITY_RANK = { critical: 0, medium: 1, low: 2 } as const;
 
 /** Only follow redirects that stay on the same site (e.g. example.com → www.example.com/en). */
@@ -60,7 +67,7 @@ function probeOrigin(ctx: ScanContext, hostname: string, home: HttpResult | null
   return null;
 }
 
-export function scanHost(hostname: string, ctx: ScanContext = publicContext()) {
+export function scanHost(hostname: string, ctx: ScanContext = publicContext(), onProgress: OnProgress = () => {}) {
   let timer: NodeJS.Timeout | undefined;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(
@@ -68,10 +75,10 @@ export function scanHost(hostname: string, ctx: ScanContext = publicContext()) {
       SCAN_BUDGET_MS,
     );
   });
-  return Promise.race([runScan(hostname, ctx), timeout]).finally(() => clearTimeout(timer));
+  return Promise.race([runScan(hostname, ctx, onProgress), timeout]).finally(() => clearTimeout(timer));
 }
 
-async function runScan(hostname: string, ctx: ScanContext) {
+async function runScan(hostname: string, ctx: ScanContext, onProgress: OnProgress) {
   const started = Date.now();
   await ctx.assertTarget(hostname);
 
@@ -110,11 +117,33 @@ async function runScan(hostname: string, ctx: ScanContext) {
     findings.push(httpCheck);
   }
 
+  // The homepage visit settles the certificate and the browser protections.
+  onProgress(
+    httpsAnswered
+      ? { step: 'certificate', status: 'done' }
+      : { step: 'certificate', status: 'skipped', note: 'no secure connection' },
+  );
+  onProgress(
+    home
+      ? { step: 'protections', status: 'done' }
+      : { step: 'protections', status: 'skipped', note: httpsAnswered ? 'certificate not trusted' : 'no secure connection' },
+  );
+
   // The slower checks run side by side.
   const origin = probeOrigin(ctx, hostname, home, httpCheck);
   const [legacy, paths] = await Promise.all([
-    httpsAnswered ? checkLegacyTls(ctx, hostname) : null,
-    origin ? probePaths(ctx, origin) : [],
+    (httpsAnswered ? checkLegacyTls(ctx, hostname) : Promise.resolve(null)).then((result) => {
+      onProgress({ step: 'connection', status: 'done' });
+      return result;
+    }),
+    (origin ? probePaths(ctx, origin) : Promise.resolve([])).then((result) => {
+      onProgress(
+        result.length > 0
+          ? { step: 'files', status: 'done' }
+          : { step: 'files', status: 'skipped', note: origin ? 'site didn’t answer' : 'no connection we could use' },
+      );
+      return result;
+    }),
   ]);
   if (legacy) findings.push(legacy);
   findings.push(...paths);

@@ -25,16 +25,61 @@ export type ScanReport = {
 
 export class ScanError extends Error {}
 
-export async function runScan(domain: string): Promise<ScanReport> {
+/** The four parts of a check, in the order the home page lists them. */
+export const SCAN_STEPS = ['connection', 'certificate', 'protections', 'files'] as const;
+export type ScanStep = (typeof SCAN_STEPS)[number];
+/** "done" means the part was checked (not that it passed); "skipped" means it couldn't run. */
+export type ScanProgress = { step: ScanStep; status: 'done' | 'skipped'; note?: string };
+
+type StreamLine =
+  | ({ type: 'progress' } & ScanProgress)
+  | { type: 'report'; report: ScanReport }
+  | { type: 'error'; error: string };
+
+const LOST = 'The connection to Sentry dropped before the check finished. Please try again.';
+
+/** Reads the server's one-JSON-object-per-line stream, passing progress on until the report arrives. */
+async function readStream(body: ReadableStream<Uint8Array>, onProgress: (p: ScanProgress) => void): Promise<ScanReport> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffered = '';
+  for (;;) {
+    let chunk: ReadableStreamReadResult<Uint8Array>;
+    try {
+      chunk = await reader.read();
+    } catch {
+      throw new ScanError(LOST);
+    }
+    if (chunk.done) throw new ScanError(LOST);
+    buffered += decoder.decode(chunk.value, { stream: true });
+    const lines = buffered.split('\n');
+    buffered = lines.pop() ?? '';
+    for (const text of lines) {
+      if (!text.trim()) continue;
+      const line = JSON.parse(text) as StreamLine;
+      if (line.type === 'progress') onProgress({ step: line.step, status: line.status, note: line.note });
+      else if (line.type === 'error') throw new ScanError(line.error);
+      else {
+        void reader.cancel();
+        return line.report;
+      }
+    }
+  }
+}
+
+export async function runScan(domain: string, onProgress: (p: ScanProgress) => void = () => {}): Promise<ScanReport> {
   let res: Response;
   try {
     res = await fetch('/api/scan', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', accept: 'application/x-ndjson' },
       body: JSON.stringify({ domain }),
     });
   } catch {
     throw new ScanError('We couldn’t reach the Sentry server. Check it’s running and try again.');
+  }
+  if (res.ok && res.body && res.headers.get('content-type')?.includes('application/x-ndjson')) {
+    return readStream(res.body, onProgress);
   }
   const body = await res.json().catch(() => null);
   if (!res.ok) {

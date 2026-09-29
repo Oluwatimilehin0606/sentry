@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { PROBES } from '../src/scanner/paths.ts';
-import { scanHost, type ScanReport } from '../src/scanner/scan.ts';
+import { scanHost, type ScanProgress, type ScanReport } from '../src/scanner/scan.ts';
 import { startFixture, type Fixture, type FixtureOptions } from './fixture-server.ts';
 
 const SECURE_HEADERS = {
@@ -76,6 +76,31 @@ describe('scanning the local fixture site', () => {
   it('says the site is unreachable when nothing answers', async () => {
     fixture = await startFixture({ https: false, http: 'closed' });
     await expect(scanHost('localhost', fixture.ctx)).rejects.toMatchObject({ code: 'UNREACHABLE' });
+  });
+});
+
+describe('live progress', () => {
+  async function progressFor(opts: FixtureOptions): Promise<ScanProgress[]> {
+    fixture = await startFixture(opts);
+    const events: ScanProgress[] = [];
+    await scanHost('localhost', fixture.ctx, (p) => events.push(p));
+    return events;
+  }
+
+  it('reports each part once, with the slow file check last', async () => {
+    const events = await progressFor({ headers: SECURE_HEADERS });
+    expect(events.map((e) => e.step).sort()).toEqual(['certificate', 'connection', 'files', 'protections']);
+    expect(events.every((e) => e.status === 'done')).toBe(true);
+    expect(events.at(-1)?.step).toBe('files');
+  });
+
+  it('marks parts that could not run as skipped, never as done', async () => {
+    const events = await progressFor({ https: false, http: 'serve' });
+    const byStep = Object.fromEntries(events.map((e) => [e.step, e]));
+    expect(byStep.certificate).toMatchObject({ status: 'skipped', note: 'no secure connection' });
+    expect(byStep.protections).toMatchObject({ status: 'skipped' });
+    expect(byStep.connection?.status).toBe('done');
+    expect(byStep.files?.status).toBe('done');
   });
 });
 

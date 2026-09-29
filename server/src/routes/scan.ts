@@ -3,7 +3,7 @@ import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/require-auth.ts';
 import { normalizeHostname } from '../scanner/domain.ts';
-import { scanHost } from '../scanner/scan.ts';
+import { scanHost, type ScanProgress } from '../scanner/scan.ts';
 import { ScanTargetError } from '../scanner/target.ts';
 
 export const scanRouter = Router();
@@ -31,6 +31,33 @@ scanRouter.post('/', async (req, res, next) => {
   const hostname = parsed.success ? normalizeHostname(parsed.data.domain) : null;
   if (!hostname) {
     res.status(400).json({ error: 'Enter a valid domain, like yourbakery.com.' });
+    return;
+  }
+
+  // The home page asks for live progress: one JSON object per line as each part of the scan
+  // finishes, then the report (or an error). Other callers get the plain JSON report.
+  if (req.accepts(['application/json', 'application/x-ndjson']) === 'application/x-ndjson') {
+    res.status(200).set({
+      'content-type': 'application/x-ndjson; charset=utf-8',
+      'cache-control': 'no-store',
+      'x-accel-buffering': 'no',
+    });
+    res.flushHeaders();
+    const send = (line: object) => {
+      if (!res.writableEnded && !res.destroyed) res.write(`${JSON.stringify(line)}\n`);
+    };
+    try {
+      const report = await scanHost(hostname, undefined, (progress: ScanProgress) => send({ type: 'progress', ...progress }));
+      send({ type: 'report', report });
+    } catch (err) {
+      if (err instanceof ScanTargetError) {
+        send({ type: 'error', error: err.message, code: err.code });
+      } else {
+        req.log.error({ err }, 'Scan failed');
+        send({ type: 'error', error: 'Something went wrong on our side. Please try again.' });
+      }
+    }
+    res.end();
     return;
   }
 

@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { AlertCircle, Globe, Loader2, Radar } from 'lucide-react';
+import { AlertCircle, Check, Globe, Loader2, Minus, Radar } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { CommandBar } from '@/components/CommandBar';
 import { MonitorWave } from '@/components/MonitorWave';
@@ -7,7 +7,7 @@ import { ScanReport } from '@/components/ScanReport';
 import { useSession } from '@/lib/auth-client';
 import { GRADE_COLOR, nextStep } from '@/lib/grading';
 import { loadRecentChecks, saveRecentCheck, type RecentCheck } from '@/lib/recent-checks';
-import { runScan, type Grade, type ScanReport as Report } from '@/lib/scan';
+import { runScan, SCAN_STEPS, type Grade, type ScanProgress, type ScanReport as Report, type ScanStep } from '@/lib/scan';
 import { cn } from '@/lib/utils';
 
 const GRADES: { letter: Grade; min: string }[] = [
@@ -104,26 +104,81 @@ function NextStepCard({ report }: { report: Report }) {
 
 /* ---------- Main column states ---------- */
 
-function Checking({ hostname }: { hostname: string }) {
+const STEP_LABEL: Record<ScanStep, string> = {
+  connection: 'Secure connection',
+  certificate: 'Security certificate',
+  protections: 'Browser protections',
+  files: 'Private files',
+};
+
+/** How long the finished list stays up before the report replaces it, so the last tick is seen. */
+const SETTLE_MS = 600;
+
+type Progress = Partial<Record<ScanStep, ScanProgress>>;
+
+function StepIcon({ state }: { state?: ScanProgress }) {
+  if (state?.status === 'done') {
+    return (
+      <span
+        className="grid size-5 shrink-0 animate-[check-in_0.3s_cubic-bezier(0.2,0.8,0.3,1.3)_both] place-items-center rounded-full bg-pass-soft text-pass"
+        aria-hidden="true"
+      >
+        <Check className="size-3.5" strokeWidth={3} />
+      </span>
+    );
+  }
+  if (state?.status === 'skipped') {
+    return (
+      <span
+        className="grid size-5 shrink-0 place-items-center rounded-full border-2 border-border text-muted-foreground"
+        aria-hidden="true"
+      >
+        <Minus className="size-2.5" strokeWidth={3} />
+      </span>
+    );
+  }
+  return (
+    <span
+      className="size-5 shrink-0 animate-[soft-pulse_1.2s_ease-in-out_infinite] rounded-full border-2 border-primary"
+      aria-hidden="true"
+    />
+  );
+}
+
+/** Ticks each part off as the server reports it finished; a tick means checked, not passed. */
+function Checking({ hostname, progress }: { hostname: string; progress: Progress }) {
+  const finished = SCAN_STEPS.every((step) => progress[step]);
   return (
     <div role="status" className="flex flex-col gap-4 rounded-[14px] border bg-card p-6">
       <div className="flex items-center gap-3 font-semibold">
-        <Loader2 className="size-5 animate-spin text-primary" aria-hidden="true" />
-        Checking {hostname}…
+        {finished ? (
+          <span className="grid size-5 place-items-center rounded-full bg-pass-soft text-pass" aria-hidden="true">
+            <Check className="size-3.5" strokeWidth={3} />
+          </span>
+        ) : (
+          <Loader2 className="size-5 animate-spin text-primary" aria-hidden="true" />
+        )}
+        {finished ? `Checked ${hostname}` : `Checking ${hostname}…`}
       </div>
-      <ul className="flex flex-col gap-3 text-[0.9375rem] text-muted-foreground">
-        {['Secure connection', 'Security certificate', 'Browser protections', 'Private files'].map((label, i) => (
-          <li key={label} className="flex items-center gap-3">
-            <span
-              className="size-4 animate-[soft-pulse_1.2s_ease-in-out_infinite] rounded-full border-2 border-border"
-              style={{ animationDelay: `${i * 200}ms` }}
-              aria-hidden="true"
-            />
-            {label}
-          </li>
-        ))}
+      <ul className="flex flex-col gap-3 text-[0.9375rem]">
+        {SCAN_STEPS.map((step) => {
+          const state = progress[step];
+          const label = STEP_LABEL[step];
+          return (
+            <li key={step} className="flex items-center gap-3">
+              <StepIcon state={state} />
+              <span className={state?.status === 'done' ? 'text-foreground' : 'text-muted-foreground'}>
+                {state?.status === 'done'
+                  ? label
+                  : state?.status === 'skipped'
+                    ? `${label}: ${state.note ?? 'couldn’t check'}`
+                    : `Checking ${label.toLowerCase()}…`}
+              </span>
+            </li>
+          );
+        })}
       </ul>
-      <p className="text-sm text-muted-foreground">This takes about 10 seconds.</p>
+      <p className="text-sm text-muted-foreground">{finished ? 'Preparing your report…' : 'This takes about 10 seconds.'}</p>
     </div>
   );
 }
@@ -156,13 +211,19 @@ export function HomePage() {
   const [domain, setDomain] = useState('');
   const [recent, setRecent] = useState<RecentCheck[]>([]);
   const reportRef = useRef<HTMLDivElement>(null);
+  const [progress, setProgress] = useState<Progress>({});
 
   useEffect(() => {
     if (userId) setRecent(loadRecentChecks(userId));
   }, [userId]);
 
   const scan = useMutation({
-    mutationFn: runScan,
+    mutationFn: async (hostname: string) => {
+      setProgress({});
+      const report = await runScan(hostname, (p) => setProgress((prev) => ({ ...prev, [p.step]: p })));
+      await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+      return report;
+    },
     onSuccess: (report) => {
       if (!userId) return;
       setRecent(
@@ -238,7 +299,7 @@ export function HomePage() {
           )}
 
           {scan.isPending ? (
-            <Checking hostname={scan.variables ?? domain} />
+            <Checking hostname={scan.variables ?? domain} progress={progress} />
           ) : scan.data ? (
             <ScanReport report={scan.data} />
           ) : (
