@@ -1,4 +1,4 @@
-import { CATALOG } from './catalog.ts';
+import { CATALOG, type CatalogEntry } from './catalog.ts';
 import {
   evaluateCertificate,
   evaluateHeaders,
@@ -152,7 +152,7 @@ async function runScan(hostname: string, ctx: ScanContext, onProgress: OnProgres
 
   const detailed = findings
     .map((f) => {
-      const entry = CATALOG[f.checkId];
+      const entry: CatalogEntry = CATALOG[f.checkId];
       return {
         checkId: f.checkId,
         status: f.status,
@@ -161,6 +161,7 @@ async function runScan(hostname: string, ctx: ScanContext, onProgress: OnProgres
         whatItIs: entry.whatItIs,
         whyItMatters: entry.whyItMatters,
         howToFix: entry.howToFix,
+        forDeveloper: entry.forDeveloper,
         evidence: f.evidence,
       };
     })

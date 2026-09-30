@@ -26,15 +26,17 @@ export function scoreFindings(findings: Finding[]) {
   const grade = gradeFor(score);
   const article = grade === 'A' || grade === 'F' ? 'an' : 'a';
   const count = failed.length;
-  const worst = SEVERITY_ORDER.find((s) => severities.includes(s));
-  const worstCount = severities.filter((s) => s === worst).length;
+  // The most severe issue, first in report order: the same one the home page's "Your next step" shows.
+  const rank = (f: Finding) => SEVERITY_ORDER.indexOf(CATALOG[f.checkId].severity);
+  const first = [...failed].sort((a, b) => rank(a) - rank(b))[0];
+  const firstTitle = first ? CATALOG[first.checkId].title : '';
 
   const summary =
     count === 0
       ? `Your site scored ${article} ${grade}. No problems found in the checks we ran.`
-      : `Your site scored ${article} ${grade}. ${count} ${
-          count === 1 ? 'issue is' : 'issues are'
-        } putting you at risk. Fix the ${worst} ${worstCount === 1 ? 'one' : 'ones'} first.`;
+      : count === 1
+        ? `Your site scored ${article} ${grade}. 1 issue is putting you at risk: “${firstTitle}”.`
+        : `Your site scored ${article} ${grade}. ${count} issues are putting you at risk. Start with “${firstTitle}”.`;
 
   return { score, grade, summary };
 }

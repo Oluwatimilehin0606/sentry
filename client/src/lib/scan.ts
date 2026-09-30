@@ -9,6 +9,8 @@ export type ReportFinding = {
   whatItIs: string;
   whyItMatters: string;
   howToFix: string;
+  /** The exact technical setting, for whoever runs the site. */
+  forDeveloper?: string;
   evidence?: string;
 };
 

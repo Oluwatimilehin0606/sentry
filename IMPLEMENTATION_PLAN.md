@@ -180,6 +180,8 @@ The core of the product. Built as a **standalone library** in `server/src/scanne
 - Scoring tests covering boundaries and the critical cap.
 - Copy reviewed once for reading level (aim for a non-technical reader; no acronyms without explanation).
 
+> **Phase 3 status (2026-09-30): done.** The catalog lives in `server/src/scanner/catalog.ts` (typed by check ID) rather than `catalog/findings.ts`. Wording was reviewed against an approved before/after mockup: plain steps first, and the exact technical setting moved to a new `forDeveloper` field that the report shows in a "For your developer" box with a Copy button (it selects the text if the browser blocks copying). The summary now names the first issue to fix, the same one the home page's "Your next step" shows. A fixture test requires every check to be reported both as pass and fail, each with its explanation.
+
 ---
 
 ## Phase 4 — Domain Management & Ownership Verification (Days 11–13)

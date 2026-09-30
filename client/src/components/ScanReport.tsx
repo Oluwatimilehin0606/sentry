@@ -1,5 +1,5 @@
 import { Check, CheckCircle2, ChevronDown } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { GRADE_COLOR } from '@/lib/grading';
 import type { ReportFinding, ScanReport as Report, Severity } from '@/lib/scan';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,50 @@ function Pill({ className, children }: { className: string; children: ReactNode 
   );
 }
 
+const TERM = 'text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase';
+
+/** The exact technical setting, set apart so an owner can copy it to whoever runs their site. */
+function DeveloperNote({ text }: { text: string }) {
+  const [label, setLabel] = useState('Copy');
+  const codeRef = useRef<HTMLElement>(null);
+  const timer = useRef<number>(undefined);
+  const flash = (next: string) => {
+    setLabel(next);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => setLabel('Copy'), 2500);
+  };
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      flash('Copied');
+    } catch {
+      // Clipboard blocked by the browser: select the text so it can be copied by hand.
+      const range = document.createRange();
+      if (codeRef.current) range.selectNodeContents(codeRef.current);
+      window.getSelection()?.removeAllRanges();
+      window.getSelection()?.addRange(range);
+      flash('Selected, press Ctrl+C');
+    }
+  };
+  return (
+    <dd className="mt-2.5 flex flex-col gap-1.5 rounded-lg bg-muted px-3 py-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <span className={TERM}>For your developer</span>
+        <button
+          type="button"
+          onClick={copy}
+          className="h-7 rounded-md border bg-card px-2.5 text-[0.8125rem] font-semibold transition-colors hover:bg-background focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+        >
+          <span aria-live="polite">{label}</span>
+        </button>
+      </div>
+      <code ref={codeRef} className="font-mono text-[0.8125rem] [overflow-wrap:anywhere]">
+        {text}
+      </code>
+    </dd>
+  );
+}
+
 function FindingRow({ finding, open }: { finding: ReportFinding; open: boolean }) {
   const style = SEVERITY_STYLE[finding.severity];
   return (
@@ -30,17 +74,15 @@ function FindingRow({ finding, open }: { finding: ReportFinding; open: boolean }
       <div className="flex flex-col gap-4 px-5 pb-5">
         <p className="max-w-[70ch] text-[0.9375rem] text-muted-foreground">{finding.whatItIs}</p>
         <dl className="grid gap-4 sm:grid-cols-2 sm:gap-5">
-          {(
-            [
-              ['Why it matters', finding.whyItMatters],
-              ['How to fix', finding.howToFix],
-            ] as const
-          ).map(([term, text]) => (
-            <div key={term}>
-              <dt className="text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase">{term}</dt>
-              <dd className="mt-0.5 text-[0.9375rem]">{text}</dd>
-            </div>
-          ))}
+          <div>
+            <dt className={TERM}>Why it matters</dt>
+            <dd className="mt-0.5 text-[0.9375rem]">{finding.whyItMatters}</dd>
+          </div>
+          <div>
+            <dt className={TERM}>How to fix</dt>
+            <dd className="mt-0.5 text-[0.9375rem]">{finding.howToFix}</dd>
+            {finding.forDeveloper && <DeveloperNote text={finding.forDeveloper} />}
+          </div>
         </dl>
         {finding.evidence && (
           <p className="overflow-x-auto border-t border-dashed pt-3 font-mono text-[0.8125rem] whitespace-nowrap text-muted-foreground">

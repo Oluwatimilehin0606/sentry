@@ -102,7 +102,20 @@ describe('scoreFindings', () => {
   it('deducts by severity', () => {
     const result = scoreFindings([fail('header.hsts_missing'), fail('header.xcto_missing')]);
     expect(result).toMatchObject({ score: 86, grade: 'B' });
-    expect(result.summary).toBe('Your site scored a B. 2 issues are putting you at risk. Fix the medium one first.');
+    expect(result.summary).toBe(
+      'Your site scored a B. 2 issues are putting you at risk. Start with “Browsers aren’t told to always use a secure connection”.',
+    );
+  });
+
+  it('names the single issue when there is only one', () => {
+    expect(scoreFindings([fail('header.xcto_missing')]).summary).toBe(
+      'Your site scored an A. 1 issue is putting you at risk: “Browsers may guess what your files are”.',
+    );
+  });
+
+  it('starts with the most severe issue, whatever order the checks ran in', () => {
+    const result = scoreFindings([fail('header.xcto_missing'), fail('header.csp_missing'), fail('path.env_exposed')]);
+    expect(result.summary).toContain('Start with “Your private settings file is public”.');
   });
 
   it('caps any critical problem at a D', () => {
