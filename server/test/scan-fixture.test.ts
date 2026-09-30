@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { CATALOG } from '../src/scanner/catalog.ts';
 import { PROBES } from '../src/scanner/paths.ts';
 import { scanHost, type ScanProgress, type ScanReport } from '../src/scanner/scan.ts';
 import { startFixture, type Fixture, type FixtureOptions } from './fixture-server.ts';
@@ -158,6 +159,41 @@ describe('exposed files', () => {
     expect(unexpected).toHaveLength(1);
     expect(unexpected[0]).toMatch(/^\/sentry-check-[0-9a-f]{12}$/);
   });
+});
+
+describe('plain-English coverage', () => {
+  it('can report every check both ways, and every result it reports has an explanation', async () => {
+    const seen = new Set<string>();
+    const configs: FixtureOptions[] = [
+      { headers: SECURE_HEADERS },
+      { legacyTls: true, http: 'serve', headers: { server: 'Apache/2.4.41 (Ubuntu)' } },
+      { cert: 'expiring' },
+      { cert: 'expired' },
+      { https: false, http: 'serve' },
+      {
+        files: {
+          '/.env': { body: 'APP_KEY=abc\nDB_PASSWORD=hunter2\n' },
+          '/.git/HEAD': { body: 'ref: refs/heads/main\n' },
+          '/.htpasswd': { body: 'admin:$apr1$abc$defghijklmnopqrstuvw\n' },
+          '/dump.sql': { body: 'CREATE TABLE orders (id int);\n' },
+          '/server-status': { body: '<h1>Apache Server Status for localhost</h1>', type: 'text/html' },
+          '/phpmyadmin/': { body: '<title>phpMyAdmin</title><form class="pma_login">', type: 'text/html' },
+          '/.DS_Store': { body: Buffer.from([0, 0, 0, 1, 0x42, 0x75, 0x64, 0x31]) },
+        },
+      },
+    ];
+    for (const opts of configs) {
+      const report = await scan(opts);
+      for (const f of report.findings) {
+        seen.add(`${f.checkId}:${f.status}`);
+        for (const text of [f.title, f.whatItIs, f.whyItMatters, f.howToFix]) expect(text, f.checkId).toMatch(/\w{3}/);
+      }
+      await fixture?.close();
+      fixture = undefined;
+    }
+    const expected = Object.keys(CATALOG).flatMap((id) => [`${id}:pass`, `${id}:fail`]);
+    expect([...seen].sort()).toEqual(expected.sort());
+  }, 90_000);
 });
 
 describe('scan safety', () => {
