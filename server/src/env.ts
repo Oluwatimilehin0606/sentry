@@ -8,6 +8,11 @@ const EnvSchema = z.object({
   DATABASE_URL: z
     .string({ error: 'is not set. Copy .env.example to .env and fill it in.' })
     .regex(/^postgres(ql)?:\/\//, 'must start with postgres://'),
+  // Where alert emails go. In development: the local test inbox (`npm run mail`, MailDev).
+  SMTP_URL: z.string().regex(/^smtps?:\/\//, 'must start with smtp:// or smtps://').default('smtp://localhost:1025'),
+  MAIL_FROM: z.string().default('Sentry <alerts@sentry.local>'),
+  // Time zone for times written in emails (most users are in Nigeria).
+  APP_TIMEZONE: z.string().default('Africa/Lagos'),
   BETTER_AUTH_SECRET: z
     .string({ error: 'is not set. Copy .env.example to .env and fill it in.' })
     .min(32, 'must be at least 32 characters'),

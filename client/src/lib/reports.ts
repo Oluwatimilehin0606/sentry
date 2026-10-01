@@ -6,6 +6,8 @@ export type ScanSummary = {
   id: string;
   hostname: string;
   mode: 'full' | 'light';
+  /** "scheduled" = an automatic check. */
+  trigger: 'manual' | 'scheduled';
   score: number;
   grade: Grade;
   scannedAt: string;

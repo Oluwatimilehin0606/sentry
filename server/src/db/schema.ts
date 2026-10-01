@@ -107,9 +107,16 @@ export const domains = pgTable(
     verifyToken: text('verify_token').notNull(),
     verifiedAt: timestamp('verified_at', { withTimezone: true }),
     rescanInterval: rescanInterval('rescan_interval').notNull().default('none'),
+    /** When the next automatic check is due (null when automatic checks are off). */
+    nextCheckAt: timestamp('next_check_at', { withTimezone: true }),
+    /** Email the owner when an automatic check finds things got worse. */
+    alertsEnabled: boolean('alerts_enabled').notNull().default(true),
     createdAt: createdAt(),
   },
-  (t) => [uniqueIndex('domains_user_hostname_uq').on(t.userId, t.hostname)],
+  (t) => [
+    uniqueIndex('domains_user_hostname_uq').on(t.userId, t.hostname),
+    index('domains_next_check_idx').on(t.nextCheckAt),
+  ],
 );
 
 export const scanMode = pgEnum('scan_mode', ['full', 'light']);

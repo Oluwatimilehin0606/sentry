@@ -46,7 +46,8 @@ export function ReportPage() {
               <p className="text-muted-foreground">
                 {/* "1 Oct 2026, 14:05" reads as "1 Oct 2026 at 14:05". */}
                 Checked {dateTime.format(new Date(report.data.scannedAt)).replace(', ', ' at ')} ·{' '}
-                {report.data.mode === 'full' ? 'Full check' : 'Light check'} · took{' '}
+                {report.data.mode === 'full' ? 'Full check' : 'Light check'}
+                {report.data.trigger === 'scheduled' ? ' (automatic)' : ''} · took{' '}
                 {(report.data.durationMs / 1000).toFixed(1)}s
               </p>
             </div>

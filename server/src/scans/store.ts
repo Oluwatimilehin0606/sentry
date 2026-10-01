@@ -6,7 +6,9 @@ import { diffChecks } from './diff.ts';
 import { buildReport, type ScanMode, type ScanReport } from '../scanner/scan.ts';
 
 /** A finished check as stored: raw results only. The wording is added when it's read back. */
-export async function saveScan(userId: string, report: ScanReport): Promise<string> {
+export type Trigger = 'manual' | 'scheduled';
+
+export async function saveScan(userId: string, report: ScanReport, trigger: Trigger = 'manual'): Promise<string> {
   return db.transaction(async (tx) => {
     const [site] = await tx
       .select({ id: domains.id })
@@ -20,6 +22,7 @@ export async function saveScan(userId: string, report: ScanReport): Promise<stri
         hostname: report.hostname,
         domainId: site?.id ?? null,
         mode: report.mode,
+        trigger,
         status: 'done',
         score: report.score,
         grade: report.grade,
@@ -49,6 +52,7 @@ export type ScanSummary = {
   id: string;
   hostname: string;
   mode: ScanMode;
+  trigger: Trigger;
   score: number;
   grade: string;
   scannedAt: string;
@@ -87,6 +91,7 @@ export async function listScans(
       id: scans.id,
       hostname: scans.hostname,
       mode: scans.mode,
+      trigger: scans.trigger,
       score: scans.score,
       grade: scans.grade,
       createdAt: scans.createdAt,
@@ -115,6 +120,7 @@ export async function listScans(
         id: r.id,
         hostname: r.hostname,
         mode: r.mode,
+        trigger: r.trigger,
         score: r.score ?? 0,
         grade: r.grade ?? 'F',
         scannedAt: r.createdAt.toISOString(),
@@ -139,7 +145,7 @@ export type ReportChanges = {
   stillFailing: number;
 };
 
-export type SavedReport = ScanReport & { id: string; changes: ReportChanges | null };
+export type SavedReport = ScanReport & { id: string; trigger: Trigger; changes: ReportChanges | null };
 
 /** One saved report, rebuilt with today's wording. Other people's reports read as missing. */
 export async function getScan(userId: string, id: string): Promise<SavedReport | null> {
@@ -195,7 +201,7 @@ export async function getScan(userId: string, id: string): Promise<SavedReport |
       stillFailing: diff.stillFailing.length,
     };
   }
-  return { id: row.id, ...report, changes };
+  return { id: row.id, ...report, trigger: row.trigger, changes };
 }
 
 /** How many checks the account started since `since` (for the daily limit). */

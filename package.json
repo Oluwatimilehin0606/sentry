@@ -15,6 +15,7 @@
     "test": "npm run test -w server && npm run test -w client",
     "test:e2e": "playwright test",
     "demo:site": "node e2e/fixture-site.ts",
+    "mail": "maildev --smtp 1025 --web 1080 --ip 127.0.0.1 --web-ip 127.0.0.1",
     "demo:verify": "node e2e/publish-txt.ts",
     "scan": "npm run scan -w server --",
     "format": "prettier --write .",
@@ -31,6 +32,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.12.0",
+    "maildev": "^3.0.0",
     "prettier": "^3.9.9",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.70.1"

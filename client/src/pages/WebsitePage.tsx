@@ -1,11 +1,13 @@
 import { ArrowLeft, Check, Clock, Loader2 } from 'lucide-react';
-import { useRef, useState, type ReactNode } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
+import { AutomaticChecks } from '@/components/AutomaticChecks';
+import { useSession } from '@/lib/auth-client';
 import { CopyButton } from '@/components/CopyButton';
 import { FormError } from '@/components/FormError';
 import { Button } from '@/components/ui/button';
 import { ScoreChart } from '@/components/ScoreChart';
-import { recordName, useDomains, useVerifyDomain, type Domain, type VerifyResult } from '@/lib/domains';
+import { recordName, useDomains, useUpdateDomain, useVerifyDomain, type Domain, type VerifyResult } from '@/lib/domains';
 import { GRADE_COLOR } from '@/lib/grading';
 import { describeChange, useScanList, useScoreHistory, whenChecked, type ScanSummary } from '@/lib/reports';
 import { ModeTag } from '@/pages/ReportsPage';
@@ -283,7 +285,7 @@ function Checks({ hostname, onCheck }: { hostname: string; onCheck: () => void }
           {scans.map((s) => (
             <li
               key={s.id}
-              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-t px-5 py-3.5 first:border-t-0 md:grid-cols-[200px_110px_minmax(0,1fr)_120px_110px] md:gap-5"
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-t px-5 py-3.5 first:border-t-0 md:grid-cols-[200px_110px_minmax(0,1fr)_200px_110px] md:gap-5"
             >
               <span className="col-start-1 row-start-2 text-sm text-muted-foreground md:row-start-auto md:text-base md:text-foreground">
                 {whenChecked(s.scannedAt)}
@@ -307,7 +309,7 @@ function Checks({ hostname, onCheck }: { hostname: string; onCheck: () => void }
                 {describeChange(s.change)}
               </span>
               <span className="hidden md:block">
-                <ModeTag mode={s.mode} />
+                <ModeTag mode={s.mode} trigger={s.trigger} />
               </span>
               <Link
                 to={`/reports/${s.id}`}
@@ -343,6 +345,19 @@ export function WebsitePage() {
   const domain = sites.data?.find((d) => d.hostname === hostname);
   // Keep the proof card up after verifying, for its "Run the full check" button.
   const [justVerified, setJustVerified] = useState(false);
+  const { data: session } = useSession();
+
+  // "Turn off these emails" in an alert links here with ?alerts=off.
+  const [params, setParams] = useSearchParams();
+  const update = useUpdateDomain();
+  const [alertsTurnedOff, setAlertsTurnedOff] = useState(false);
+  useEffect(() => {
+    if (params.get('alerts') !== 'off' || !domain) return;
+    setParams({}, { replace: true });
+    if (domain.alertsEnabled) update.mutate({ id: domain.id, alertsEnabled: false }, { onSuccess: () => setAlertsTurnedOff(true) });
+    else setAlertsTurnedOff(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, when the website has loaded
+  }, [domain?.id]);
   const check = () => navigate('/home', { state: { check: hostname } });
 
   return (
@@ -415,6 +430,13 @@ export function WebsitePage() {
             </section>
           )}
 
+          {alertsTurnedOff && (
+            <div role="status" className="flex items-center gap-3 rounded-[14px] border bg-card p-4 text-[0.9375rem]">
+              <Check className="size-5 shrink-0 text-pass" strokeWidth={2.6} aria-hidden="true" />
+              Email alerts for {domain.hostname} are off. You can turn them back on below.
+            </div>
+          )}
+          <AutomaticChecks domain={domain} email={session?.user.email} />
           <History hostname={domain.hostname} />
           <Checks hostname={domain.hostname} onCheck={check} />
         </>

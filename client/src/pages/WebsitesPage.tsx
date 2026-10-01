@@ -6,7 +6,7 @@ import { FormError } from '@/components/FormError';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useDomains, useRemoveDomain, type Domain } from '@/lib/domains';
+import { scheduleLine, useDomains, useRemoveDomain, type Domain } from '@/lib/domains';
 import { GRADE_COLOR } from '@/lib/grading';
 import { latestPerWebsite, useRecentScans, type ScanSummary } from '@/lib/reports';
 import { cn } from '@/lib/utils';
@@ -64,7 +64,7 @@ function WebsiteRow({ domain, last, onRemove }: { domain: Domain; last?: ScanSum
         >
           {domain.hostname}
         </Link>
-        <span className="text-sm text-muted-foreground">Added {when(domain.createdAt)}</span>
+        <span className="text-sm text-muted-foreground">{scheduleLine(domain) ?? `Added ${when(domain.createdAt)}`}</span>
       </div>
 
       <span

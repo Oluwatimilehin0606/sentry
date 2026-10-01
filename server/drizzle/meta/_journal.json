@@ -15,6 +15,13 @@
       "when": 1790859955087,
       "tag": "0001_saved_scans",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790867857511,
+      "tag": "0002_automatic_checks",
+      "breakpoints": true
     }
   ]
 }

@@ -83,7 +83,7 @@ scanRouter.post('/', async (req, res, next) => {
       );
       const id = await saveScan(userId, report);
       // Send the saved version, so a live report shows "since your last check" too.
-      send({ type: 'report', report: (await getScan(userId, id)) ?? { id, ...report, changes: null } });
+      send({ type: 'report', report: (await getScan(userId, id)) ?? { id, ...report, trigger: 'manual' as const, changes: null } });
     } catch (err) {
       if (err instanceof ScanTargetError) {
         send({ type: 'error', error: err.message, code: err.code });
@@ -99,7 +99,7 @@ scanRouter.post('/', async (req, res, next) => {
   try {
     const report = await scanHost(hostname, contextFor(hostname), undefined, mode);
     const id = await saveScan(userId, report);
-    res.json((await getScan(userId, id)) ?? { id, ...report, changes: null });
+    res.json((await getScan(userId, id)) ?? { id, ...report, trigger: 'manual' as const, changes: null });
   } catch (err) {
     if (err instanceof ScanTargetError) {
       res.status(STATUS_FOR[err.code]).json({ error: err.message, code: err.code });

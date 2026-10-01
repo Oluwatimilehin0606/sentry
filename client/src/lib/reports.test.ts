@@ -30,6 +30,7 @@ describe('latestPerWebsite', () => {
       id,
       hostname,
       mode: 'light',
+      trigger: 'manual',
       score: 50,
       grade: 'F',
       scannedAt: '2026-10-01T00:00:00Z',

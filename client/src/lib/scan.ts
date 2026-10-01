@@ -37,6 +37,8 @@ export type ScanReport = {
   findings: ReportFinding[];
   /** Present on saved reports (every finished check is saved). */
   changes?: ReportChanges | null;
+  /** "scheduled" = an automatic check. */
+  trigger?: 'manual' | 'scheduled';
 };
 
 export class ScanError extends Error {}

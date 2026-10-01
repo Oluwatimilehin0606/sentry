@@ -120,6 +120,11 @@ Sentry needs PostgreSQL 18 running locally.
 | `npm run dev` | Starts the web app and API together |
 | `npm test` | Runs the API tests, then the website tests |
 | `npm run test:e2e` | Walks the whole journey in Chrome (sign up, check, verify, full check, reports) against a pretend website, using the test database |
+| `npm run mail` | Starts the local test inbox (MailDev) at http://localhost:1080; alert emails land there, never at real addresses |
+| `npm run test-alert -w server` | Sends an example alert email to the test inbox |
+| `npm run demo:site` / `npm run demo:verify -- sentry-verify=…` | Serves the pretend website bakery.test and "publishes" its verification line (see `.env.example`) |
+| `npm run due-now -w server -- you@example.com` | Makes bakery.test due for an automatic check now, so the scheduler checks it within a minute (development only) |
+| `npm run seed:history -w server -- you@example.com` | Adds four example past checks of yourbakery.example to an account, to try the score chart (development only) |
 | `npm run scan -- yourbakery.com` | Scans one website from the command line and prints the report (only scan sites you own or may test) |
 | `npm run lint` | Checks code style |
 | `npm run typecheck` | Type-checks client and server |

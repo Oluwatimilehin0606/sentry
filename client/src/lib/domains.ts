@@ -7,7 +7,13 @@ export type Domain = {
   verifiedAt: string | null;
   createdAt: string;
   record: { type: 'TXT'; value: string };
+  /** Automatic checks (verified websites only) and whether to email when things get worse. */
+  rescanInterval: RescanInterval;
+  nextCheckAt: string | null;
+  alertsEnabled: boolean;
 };
+
+export type RescanInterval = 'none' | 'weekly' | 'monthly';
 
 export type VerifyResult = { verified: boolean; reason?: 'not_found' | 'no_domain' | 'dns_error'; domain: Domain };
 
@@ -54,6 +60,39 @@ export function useRemoveDomain() {
     mutationFn: (id: string) => call<void>(`/api/domains/${id}`, { method: 'DELETE' }),
     onSuccess: () => client.invalidateQueries({ queryKey: KEY }),
   });
+}
+
+export function useUpdateDomain() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...settings }: { id: string; rescanInterval?: RescanInterval; alertsEnabled?: boolean }) =>
+      call<{ domain: Domain }>(`/api/domains/${id}`, { method: 'PATCH', body: JSON.stringify(settings) }).then(
+        (r) => r.domain,
+      ),
+    // Show the choice straight away (radio buttons and tick boxes shouldn't wait for the server),
+    // then use the server's answer, which includes the new "next check" time; undo on failure.
+    onMutate: async ({ id, ...settings }) => {
+      await client.cancelQueries({ queryKey: KEY });
+      const before = client.getQueryData<Domain[]>(KEY);
+      client.setQueryData<Domain[]>(KEY, (list) => list?.map((d) => (d.id === id ? { ...d, ...settings } : d)));
+      return { before };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.before) client.setQueryData(KEY, context.before);
+    },
+    onSuccess: (domain) => {
+      client.setQueryData<Domain[]>(KEY, (list) => list?.map((d) => (d.id === domain.id ? domain : d)));
+    },
+  });
+}
+
+const nextDay = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+
+/** "Checked every week · next Wed 8 Oct", or null when automatic checks are off. */
+export function scheduleLine(domain: Domain): string | null {
+  if (domain.rescanInterval === 'none' || !domain.nextCheckAt) return null;
+  const every = domain.rescanInterval === 'weekly' ? 'week' : 'month';
+  return `Checked every ${every} · next ${nextDay.format(new Date(domain.nextCheckAt))}`;
 }
 
 export function useVerifyDomain() {

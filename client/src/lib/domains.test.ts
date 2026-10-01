@@ -21,6 +21,9 @@ describe('isCoveredBy', () => {
     verifiedAt: verified ? '2026-10-01T00:00:00Z' : null,
     createdAt: '2026-10-01T00:00:00Z',
     record: { type: 'TXT', value: 'sentry-verify=0' },
+    rescanInterval: 'none',
+    nextCheckAt: null,
+    alertsEnabled: true,
   });
 
   it('matches the server: a verified domain covers itself and its subdomains only', () => {

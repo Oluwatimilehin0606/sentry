@@ -8,8 +8,8 @@ import { GRADE_COLOR } from '@/lib/grading';
 import { latestPerWebsite, useRecentScans, useScanList, whenChecked, type ScanSummary } from '@/lib/reports';
 import { cn } from '@/lib/utils';
 
-export function ModeTag({ mode }: { mode: 'full' | 'light' }) {
-  return (
+export function ModeTag({ mode, trigger }: { mode: 'full' | 'light'; trigger?: 'manual' | 'scheduled' }) {
+  const tag = (
     <span
       className={cn(
         'inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold whitespace-nowrap',
@@ -19,9 +19,18 @@ export function ModeTag({ mode }: { mode: 'full' | 'light' }) {
       {mode === 'full' ? 'Full check' : 'Light check'}
     </span>
   );
+  if (trigger !== 'scheduled') return tag;
+  return (
+    <span className="inline-flex flex-wrap gap-1.5">
+      {tag}
+      <span className="inline-flex rounded-full border border-input px-2.5 py-0.5 text-xs font-bold whitespace-nowrap text-muted-foreground">
+        Automatic
+      </span>
+    </span>
+  );
 }
 
-const COLS = 'md:grid-cols-[200px_minmax(0,1fr)_120px_120px_110px]';
+const COLS = 'md:grid-cols-[200px_minmax(0,1fr)_200px_100px_110px]';
 
 function Row({ scan }: { scan: ScanSummary }) {
   return (
@@ -38,7 +47,7 @@ function Row({ scan }: { scan: ScanSummary }) {
         {scan.hostname}
       </span>
       <span className="col-start-1 row-start-3 md:col-start-auto md:row-start-auto">
-        <ModeTag mode={scan.mode} />
+        <ModeTag mode={scan.mode} trigger={scan.trigger} />
       </span>
       <span className="col-start-2 row-start-1 flex items-baseline gap-2 md:col-start-auto md:row-start-auto">
         <span className="font-display text-xl font-bold" style={{ color: GRADE_COLOR[scan.grade] }}>

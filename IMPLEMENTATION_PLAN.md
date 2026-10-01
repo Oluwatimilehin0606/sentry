@@ -256,6 +256,8 @@ The core of the product. Built as a **standalone library** in `server/src/scanne
 - Alert email visible in the Mailpit inbox (`http://localhost:8025`) showing a simulated score drop.
 - Scheduler logic unit-tested with a mocked clock.
 
+> **Phase 7 status (2026-10-01): done**, from the approved mockup. Each verified website has "Automatic checks" (only when I ask / every week / every month) and "Email me if it gets worse". The next check runs at about the time of day of the last one, plus a few random minutes to spread websites out. **Changes from the plan:** (1) no pg-boss: a small scheduler inside the API claims due websites once a minute with one `UPDATE … FOR UPDATE SKIP LOCKED` statement that also moves their next check on, so two copies of the server never check the same website twice and a crash can't cause a burst of retries; (2) MailDev (`npm run mail`, installs with npm) instead of Mailpit (a separate download); (3) the email is HTML built from template strings with a plain-text part, instead of React Email. Alerts go out only when the grade drops or a new critical/medium problem appears; "Turn off these emails" opens the website's page and switches alerts off. Automatic checks count towards the 50-a-day limit and are tagged "Automatic" in lists. Tested: scheduling rules (mocked clock), the settings route, a due website checked against the local fixture site with the alert email captured, and live on the dev server (bakery.test → "dropped from an A to an F" in the test inbox).
+
 ---
 
 ## Phase 8 — Hardening & Demo Prep, Local (Days 22–26)

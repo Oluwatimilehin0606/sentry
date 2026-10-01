@@ -1,11 +1,12 @@
-import { and, asc, count, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq } from 'drizzle-orm';
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { db } from '../db/client.ts';
-import { domains } from '../db/schema.ts';
+import { domains, scans } from '../db/schema.ts';
 import { hasVerifyRecord, newVerifyToken, TXT_PREFIX } from '../domains/verify.ts';
 import { requireAuth } from '../middleware/require-auth.ts';
+import { firstCheckAt } from '../schedule/plan.ts';
 import { normalizeHostname } from '../scanner/domain.ts';
 
 export const domainsRouter = Router();
@@ -22,6 +23,9 @@ function present(row: DomainRow) {
     hostname: row.hostname,
     verifiedAt: row.verifiedAt,
     createdAt: row.createdAt,
+    rescanInterval: row.rescanInterval,
+    nextCheckAt: row.nextCheckAt,
+    alertsEnabled: row.alertsEnabled,
     record: { type: 'TXT', value: `${TXT_PREFIX}${row.verifyToken}` },
   };
 }
@@ -102,6 +106,57 @@ domainsRouter.delete('/:id', async (req, res) => {
   }
   await db.delete(domains).where(and(eq(domains.id, row.id), eq(domains.userId, userId)));
   res.status(204).end();
+});
+
+const SettingsBody = z
+  .object({
+    rescanInterval: z.enum(['none', 'weekly', 'monthly']).optional(),
+    alertsEnabled: z.boolean().optional(),
+  })
+  .strict();
+
+/** Automatic checks and email alerts for one website. */
+domainsRouter.patch('/:id', async (req, res) => {
+  const userId = res.locals.user!.id;
+  const row = await ownDomain(userId, String(req.params.id));
+  if (!row) {
+    res.status(404).json(NOT_FOUND);
+    return;
+  }
+  const parsed = SettingsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Those settings weren’t valid.' });
+    return;
+  }
+  const { rescanInterval, alertsEnabled } = parsed.data;
+  // Automatic checks are full checks, so only for websites the account has proved it owns.
+  if (rescanInterval && rescanInterval !== 'none' && !row.verifiedAt) {
+    res.status(400).json({ error: `Prove ${row.hostname} is yours first, then you can turn on automatic checks.` });
+    return;
+  }
+
+  const changes: Partial<typeof domains.$inferInsert> = {};
+  if (alertsEnabled !== undefined) changes.alertsEnabled = alertsEnabled;
+  if (rescanInterval !== undefined && rescanInterval !== row.rescanInterval) {
+    changes.rescanInterval = rescanInterval;
+    if (rescanInterval === 'none') changes.nextCheckAt = null;
+    else {
+      // Run at about the time of day of the website's last check.
+      const [last] = await db
+        .select({ at: scans.createdAt })
+        .from(scans)
+        .where(and(eq(scans.userId, userId), eq(scans.hostname, row.hostname), eq(scans.status, 'done')))
+        .orderBy(desc(scans.createdAt))
+        .limit(1);
+      changes.nextCheckAt = firstCheckAt(rescanInterval, last?.at ?? null, new Date());
+    }
+  }
+  if (Object.keys(changes).length === 0) {
+    res.json({ domain: present(row) });
+    return;
+  }
+  const [updated] = await db.update(domains).set(changes).where(eq(domains.id, row.id)).returning();
+  res.json({ domain: present(updated!) });
 });
 
 domainsRouter.post(

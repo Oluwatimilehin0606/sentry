@@ -48,8 +48,9 @@ describe('saved reports', () => {
     savedId = await saveScan(ownerId, original);
     const res = await owner.get(`/api/scans/${savedId}`);
     expect(res.status).toBe(200);
-    const { id, changes, ...report } = res.body.report;
+    const { id, changes, trigger, ...report } = res.body.report;
     expect(id).toBe(savedId);
+    expect(trigger).toBe('manual');
     expect(changes).toBeNull(); // the website's first check
     expect(report).toEqual(JSON.parse(JSON.stringify(original)));
   });
