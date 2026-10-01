@@ -44,16 +44,35 @@ type StreamLine =
 
 const LOST = 'The connection to Sentry dropped before the check finished. Please try again.';
 
+/**
+ * How long to wait for the next line before giving up. A check stops itself after 60 seconds,
+ * so silence beyond that means the connection is gone (for example, the server restarted) even
+ * if the browser hasn't noticed. Once every part has finished, the report follows within moments.
+ */
+const SILENCE_MS = 75_000;
+const AFTER_LAST_STEP_MS = 15_000;
+
 /** Reads the server's one-JSON-object-per-line stream, passing progress on until the report arrives. */
 async function readStream(body: ReadableStream<Uint8Array>, onProgress: (p: ScanProgress) => void): Promise<ScanReport> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
+  const finished = new Set<ScanStep>();
   let buffered = '';
   for (;;) {
-    let chunk: ReadableStreamReadResult<Uint8Array>;
+    let chunk: ReadableStreamReadResult<Uint8Array> | 'silent';
+    let timer: number | undefined;
+    const silence = new Promise<'silent'>((resolve) => {
+      timer = window.setTimeout(() => resolve('silent'), finished.size === SCAN_STEPS.length ? AFTER_LAST_STEP_MS : SILENCE_MS);
+    });
     try {
-      chunk = await reader.read();
+      chunk = await Promise.race([reader.read(), silence]);
     } catch {
+      throw new ScanError(LOST);
+    } finally {
+      window.clearTimeout(timer);
+    }
+    if (chunk === 'silent') {
+      void reader.cancel();
       throw new ScanError(LOST);
     }
     if (chunk.done) throw new ScanError(LOST);
@@ -63,7 +82,10 @@ async function readStream(body: ReadableStream<Uint8Array>, onProgress: (p: Scan
     for (const text of lines) {
       if (!text.trim()) continue;
       const line = JSON.parse(text) as StreamLine;
-      if (line.type === 'progress') onProgress({ step: line.step, status: line.status, note: line.note });
+      if (line.type === 'progress') {
+        finished.add(line.step);
+        onProgress({ step: line.step, status: line.status, note: line.note });
+      }
       else if (line.type === 'error') throw new ScanError(line.error);
       else {
         void reader.cancel();
