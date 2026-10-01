@@ -1,4 +1,8 @@
 import fs from 'node:fs';
+import path from 'node:path';
+
+/** Relative paths are from the project folder (the API itself runs from server/). */
+const fromProject = (file: string) => path.resolve(import.meta.dirname, '../..', file);
 
 /**
  * End-to-end test mode (browser tests only). When SENTRY_E2E_SITES is set, the listed pretend
@@ -21,14 +25,14 @@ const sites = load();
 
 export function e2eSite(hostname: string): (E2eSite & { ca: string }) | null {
   const site = sites?.[hostname];
-  return site ? { ...site, ca: fs.readFileSync(site.caFile, 'utf8') } : null;
+  return site ? { ...site, ca: fs.readFileSync(fromProject(site.caFile), 'utf8') } : null;
 }
 
 /** TXT records the browser test has "published" for a pretend website. */
 export function e2eTxtRecords(hostname: string): string[][] | null {
   if (!sites?.[hostname]) return null;
   const file = process.env.SENTRY_E2E_TXT_FILE;
-  if (!file || !fs.existsSync(file)) return [];
-  const all = JSON.parse(fs.readFileSync(file, 'utf8')) as Record<string, string[]>;
+  if (!file || !fs.existsSync(fromProject(file))) return [];
+  const all = JSON.parse(fs.readFileSync(fromProject(file), 'utf8')) as Record<string, string[]>;
   return (all[hostname] ?? []).map((value) => [value]);
 }
