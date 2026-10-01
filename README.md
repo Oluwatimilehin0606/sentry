@@ -134,6 +134,7 @@ Sentry needs PostgreSQL 18 running locally.
 | `npm run db:create` | Creates the dev and test databases (safe to re-run) |
 | `npm run db:generate` | Generates a migration from schema changes |
 | `npm run db:migrate` | Applies migrations to the dev database |
+| `npm run db:seed` | Empties the demo database and fills it with the demo account and websites with weeks of history |
 | `npm run db:studio` | Opens Drizzle Studio to browse the data |
 
 ### Running the demo (production build, one port)
@@ -151,6 +152,7 @@ npm run demo       # Sentry plus bakery.test, and opens the browser
 - Needs the one-time database setup above (the `sentry` user and `.env`). `npm start` creates the `sentry_demo` database and brings it up to date by itself, so demo accounts never mix with your development data.
 - It runs with `NODE_ENV=production`: the API serves the built website itself, with Sentry's full security headers, and automatic checks run every minute.
 - Settings come from `.env`. For anything the demo should do differently, create `.env.demo` (never committed) with just those lines, e.g. the real email service for alert emails (`SMTP_URL`, `MAIL_FROM`) or another port (`API_PORT`). Development keeps using `.env` alone.
+- `npm run db:seed` fills the demo database with an account and websites that already have weeks of checks: bakery.test (an A for five weeks, so checking it live shows "A → F, 7 new"), two made-up `.example` businesses, and one website still waiting to be proven. It empties the demo database first, so run it before each rehearsal. Put `DEMO_EMAIL=` (the address alert emails should reach) in `.env.demo` first; the password is made up and saved there as `DEMO_PASSWORD` if you don't set one.
 - bakery.test only works while Sentry runs on this machine (`APP_URL` is localhost); the pretend-website switch refuses to start once Sentry is online.
 
 ### Project layout

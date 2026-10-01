@@ -14,6 +14,7 @@
     "db:create": "node --env-file-if-exists=../.env scripts/db-create.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:seed": "node scripts/seed-demo.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
