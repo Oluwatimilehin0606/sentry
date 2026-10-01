@@ -53,6 +53,19 @@ test('sign up, check, verify, full check, reopen the report', async ({ page }) =
   // (The summary is in the page twice, laid out for desktop and for phones; one is visible.)
   await expect(report.getByText(/^Your site scored an? [DF]\./).filter({ visible: true })).toBeVisible();
 
+  // The full check is compared with the light one before it.
+  await expect(report.getByText(/^Since your last check/)).toBeVisible();
+
+  // The website's own page: score over time and both checks.
+  await page.goto(`/websites/${SITE}`);
+  await expect(page.getByRole('heading', { name: SITE, level: 1 })).toBeVisible();
+  await expect(page.getByText('Verified · gets the full check')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Score over time' })).toBeVisible();
+  await expect(page.getByRole('group', { name: `Score over time for ${SITE}` }).getByRole('link')).toHaveCount(2);
+  const checks = page.getByRole('region', { name: `All checks of ${SITE}` });
+  await expect(checks.getByRole('link', { name: /^View report/ })).toHaveCount(2);
+  await expect(checks.getByText('First check')).toBeVisible();
+
   // Both checks are saved and reopen on their own page.
   await page.getByRole('navigation', { name: 'App' }).getByRole('link', { name: 'Reports' }).click();
   await expect(page.getByRole('link', { name: /^View report/ })).toHaveCount(2);

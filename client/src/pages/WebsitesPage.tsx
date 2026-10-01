@@ -56,9 +56,14 @@ function WebsiteRow({ domain, last, onRemove }: { domain: Domain; last?: ScanSum
   const navigate = useNavigate();
   const verified = !!domain.verifiedAt;
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 border-t px-5 py-4 first:border-t-0 md:grid-cols-[minmax(0,1fr)_190px_150px_150px_auto]">
+    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 border-t px-5 py-4 first:border-t-0 md:grid-cols-[minmax(0,1fr)_170px_200px_150px_auto]">
       <div className="flex min-w-0 flex-col">
-        <span className="text-[1.0625rem] font-semibold [overflow-wrap:anywhere]">{domain.hostname}</span>
+        <Link
+          to={`/websites/${domain.hostname}`}
+          className="self-start rounded-md text-[1.0625rem] font-semibold text-primary [overflow-wrap:anywhere] hover:underline focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+        >
+          {domain.hostname}
+        </Link>
         <span className="text-sm text-muted-foreground">Added {when(domain.createdAt)}</span>
       </div>
 
@@ -86,6 +91,12 @@ function WebsiteRow({ domain, last, onRemove }: { domain: Domain; last?: ScanSum
                 {last.grade}
               </span>
               {last.score} · {when(last.scannedAt)}
+              {last.change && last.change.scoreDelta !== 0 && (
+                <span className={cn('font-semibold', last.change.scoreDelta > 0 ? 'text-pass' : 'text-critical')}>
+                  {last.change.scoreDelta > 0 ? `▲ ${last.change.scoreDelta}` : `▼ ${-last.change.scoreDelta}`}
+                  <span className="sr-only"> points since the check before</span>
+                </span>
+              )}
             </>
           ) : (
             <span className="text-muted-foreground">Not checked yet</span>
@@ -121,11 +132,6 @@ function WebsiteRow({ domain, last, onRemove }: { domain: Domain; last?: ScanSum
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {verified && (
-            <DropdownMenuItem asChild>
-              <Link to={`/websites/${domain.hostname}`}>Verification details</Link>
-            </DropdownMenuItem>
-          )}
           <DropdownMenuItem variant="destructive" onSelect={onRemove}>
             Remove website
           </DropdownMenuItem>

@@ -14,6 +14,14 @@ export type ReportFinding = {
   evidence?: string;
 };
 
+/** What changed since the same website's previous check (null for its first check). */
+export type ReportChanges = {
+  previous: { id: string; scannedAt: string; score: number; grade: Grade };
+  fixed: { checkId: string; title: string }[];
+  appeared: string[];
+  stillFailing: number;
+};
+
 export type ScanReport = {
   /** Set once the check is saved (every finished check is). */
   id?: string;
@@ -27,6 +35,8 @@ export type ScanReport = {
   grade: Grade;
   summary: string;
   findings: ReportFinding[];
+  /** Present on saved reports (every finished check is saved). */
+  changes?: ReportChanges | null;
 };
 
 export class ScanError extends Error {}

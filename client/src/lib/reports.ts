@@ -9,6 +9,8 @@ export type ScanSummary = {
   score: number;
   grade: Grade;
   scannedAt: string;
+  /** Compared with the same website's previous check; null for its first. */
+  change: { scoreDelta: number; fixed: number; appeared: number } | null;
 };
 
 type Page = { scans: ScanSummary[]; more: boolean };
@@ -58,6 +60,26 @@ export function useSavedReport(id: string | undefined) {
     enabled: !!id,
     queryFn: () => get<{ report: ScanReport }>(`/api/scans/${id}`).then((r) => r.report),
   });
+}
+
+/** A website's checks for its score chart: up to 50, oldest first. */
+export function useScoreHistory(hostname: string) {
+  return useQuery({
+    queryKey: ['scans', 'history', hostname],
+    queryFn: () =>
+      get<Page>(`/api/scans?${new URLSearchParams({ hostname, limit: '50' })}`).then((p) => [...p.scans].reverse()),
+  });
+}
+
+/** "▲ 16 · 2 fixed, 1 new" for a list row; "First check" when there's nothing to compare. */
+export function describeChange(change: ScanSummary['change']): string {
+  if (!change) return 'First check';
+  const arrow = change.scoreDelta > 0 ? `▲ ${change.scoreDelta}` : change.scoreDelta < 0 ? `▼ ${-change.scoreDelta}` : 'No change';
+  const parts = [
+    change.fixed ? `${change.fixed} fixed` : '',
+    change.appeared ? `${change.appeared} new` : '',
+  ].filter(Boolean);
+  return parts.length ? `${arrow} · ${parts.join(', ')}` : arrow;
 }
 
 /** Newest check per website, newest first. */

@@ -239,6 +239,8 @@ The core of the product. Built as a **standalone library** in `server/src/scanne
 - Dashboard with ≥ 2 domains and a trend chart built from ≥ 3 real scans.
 - Diff logic unit-tested (new, fixed, unchanged findings).
 
+> **Phase 6 status (2026-10-01): done**, from the approved mockup. Each website has its own page (`/websites/:hostname`, which also holds the "prove it's yours" steps until verified): a score-over-time chart (hand-built SVG instead of Recharts: one line, grade guide lines, latest score labelled, hover/focus tooltip, each point a link to its report, "Show as table"; line colour validated for light and dark surfaces) and every check with its change ("▲ 16 · 2 fixed, 1 new"). Every report says what changed since the website's previous check (strip, "New" badges, "Fixed since last check"); only checks that ran both times are compared, so light checks never make file problems look fixed. The Websites list links each name to its page and shows the trend. `npm run seed:history -w server -- you@example.com` gives a development account four made-up checks for trying the chart.
+
 ---
 
 ## Phase 7 — Scheduled Re-scans & Email Alerts (Days 19–22)

@@ -10,7 +10,7 @@ import { normalizeHostname } from '../scanner/domain.ts';
 import { contextFor } from '../scanner/context.ts';
 import { scanHost, type ScanMode, type ScanProgress } from '../scanner/scan.ts';
 import { ScanTargetError } from '../scanner/target.ts';
-import { countScansSince, saveScan } from '../scans/store.ts';
+import { countScansSince, getScan, saveScan } from '../scans/store.ts';
 
 /** Checks per account per 24 hours (light and full together). */
 export const DAILY_LIMIT = 50;
@@ -82,7 +82,8 @@ scanRouter.post('/', async (req, res, next) => {
         mode,
       );
       const id = await saveScan(userId, report);
-      send({ type: 'report', report: { id, ...report } });
+      // Send the saved version, so a live report shows "since your last check" too.
+      send({ type: 'report', report: (await getScan(userId, id)) ?? { id, ...report, changes: null } });
     } catch (err) {
       if (err instanceof ScanTargetError) {
         send({ type: 'error', error: err.message, code: err.code });
@@ -98,7 +99,7 @@ scanRouter.post('/', async (req, res, next) => {
   try {
     const report = await scanHost(hostname, contextFor(hostname), undefined, mode);
     const id = await saveScan(userId, report);
-    res.json({ id, ...report });
+    res.json((await getScan(userId, id)) ?? { id, ...report, changes: null });
   } catch (err) {
     if (err instanceof ScanTargetError) {
       res.status(STATUS_FOR[err.code]).json({ error: err.message, code: err.code });

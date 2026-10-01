@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { latestPerWebsite, timeAgo, whenChecked, type ScanSummary } from '@/lib/reports';
+import { describeChange, latestPerWebsite, timeAgo, whenChecked, type ScanSummary } from '@/lib/reports';
 
 const now = new Date(2026, 9, 1, 15, 0); // 1 Oct 2026, 15:00 local time
 
@@ -33,9 +33,22 @@ describe('latestPerWebsite', () => {
       score: 50,
       grade: 'F',
       scannedAt: '2026-10-01T00:00:00Z',
+      change: null,
     });
     const list = [s('1', 'a.example'), s('2', 'b.example'), s('3', 'a.example')];
     expect(latestPerWebsite(list).map((x) => x.id)).toEqual(['1', '2']);
     expect(latestPerWebsite(undefined)).toEqual([]);
+  });
+});
+
+describe('describeChange', () => {
+  it.each([
+    [null, 'First check'],
+    [{ scoreDelta: 16, fixed: 2, appeared: 1 }, '▲ 16 · 2 fixed, 1 new'],
+    [{ scoreDelta: 10, fixed: 1, appeared: 0 }, '▲ 10 · 1 fixed'],
+    [{ scoreDelta: -4, fixed: 0, appeared: 1 }, '▼ 4 · 1 new'],
+    [{ scoreDelta: 0, fixed: 0, appeared: 0 }, 'No change'],
+  ] as const)('%j → %s', (change, text) => {
+    expect(describeChange(change)).toBe(text);
   });
 });

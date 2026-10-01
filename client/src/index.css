@@ -38,6 +38,8 @@
   --low-soft: #eceff3;
   --pass: #17703e;
   --pass-soft: #e3f4ea;
+  /* Chart line: validated for the light surface (dataviz palette check). */
+  --chart-line: #1f5fad;
 
   --grade-a: #1d7f47;
   --grade-b: #4e8a25;
@@ -83,6 +85,8 @@
   --low-soft: #222c3c;
   --pass: #4cc784;
   --pass-soft: #12301f;
+  /* A step deeper than --primary so the line sits in the dark-surface lightness band. */
+  --chart-line: #5b93e6;
 
   --grade-a: #4cc784;
   --grade-b: #93c85a;

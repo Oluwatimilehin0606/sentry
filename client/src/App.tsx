@@ -8,9 +8,7 @@ import { LandingPage } from '@/pages/LandingPage';
 // The landing page ships in the main bundle; everything else loads only when visited.
 const HomePage = lazy(() => import('@/pages/HomePage').then((m) => ({ default: m.HomePage })));
 const WebsitesPage = lazy(() => import('@/pages/WebsitesPage').then((m) => ({ default: m.WebsitesPage })));
-const VerifyWebsitePage = lazy(() =>
-  import('@/pages/VerifyWebsitePage').then((m) => ({ default: m.VerifyWebsitePage })),
-);
+const WebsitePage = lazy(() => import('@/pages/WebsitePage').then((m) => ({ default: m.WebsitePage })));
 const ReportsPage = lazy(() => import('@/pages/ReportsPage').then((m) => ({ default: m.ReportsPage })));
 const ReportPage = lazy(() => import('@/pages/ReportPage').then((m) => ({ default: m.ReportPage })));
 const AccountPage = lazy(() => import('@/pages/AccountPage').then((m) => ({ default: m.AccountPage })));
@@ -36,7 +34,7 @@ export function App() {
             <Route element={<AppLayout />}>
               <Route path="home" element={<HomePage />} />
               <Route path="websites" element={<WebsitesPage />} />
-              <Route path="websites/:hostname" element={<VerifyWebsitePage />} />
+              <Route path="websites/:hostname" element={<WebsitePage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="reports/:id" element={<ReportPage />} />
               <Route path="account" element={<AccountPage />} />

@@ -48,8 +48,9 @@ describe('saved reports', () => {
     savedId = await saveScan(ownerId, original);
     const res = await owner.get(`/api/scans/${savedId}`);
     expect(res.status).toBe(200);
-    const { id, ...report } = res.body.report;
+    const { id, changes, ...report } = res.body.report;
     expect(id).toBe(savedId);
+    expect(changes).toBeNull(); // the website's first check
     expect(report).toEqual(JSON.parse(JSON.stringify(original)));
   });
 
@@ -85,6 +86,45 @@ describe('saved reports', () => {
     expect((await stranger.get(`/api/scans/${savedId}`)).status).toBe(404);
     expect((await owner.get('/api/scans/not-a-uuid')).status).toBe(404);
     expect((await request(app).get('/api/scans')).status).toBe(401);
+  });
+});
+
+describe('changes since the last check', () => {
+  it('compares each check with the same website’s previous one', async () => {
+    const [row] = await db.select().from(user).where(eq(user.email, 'stranger@elsewhere.example'));
+    const me = row!.id;
+    const first = fakeReport('shop.example', [
+      { checkId: 'header.hsts_missing', status: 'fail' },
+      { checkId: 'http.no_https_redirect', status: 'fail' },
+      { checkId: 'header.xcto_missing', status: 'fail' },
+      { checkId: 'header.server_version_leak', status: 'pass' },
+    ], '2026-09-29T09:00:00.000Z', 'full');
+    // Fixed HSTS and the redirect, but a version number started leaking.
+    const second = fakeReport('shop.example', [
+      { checkId: 'header.hsts_missing', status: 'pass' },
+      { checkId: 'http.no_https_redirect', status: 'pass' },
+      { checkId: 'header.xcto_missing', status: 'fail' },
+      { checkId: 'header.server_version_leak', status: 'fail' },
+    ], '2026-10-01T09:00:00.000Z', 'full');
+    await saveScan(me, first);
+    const secondId = await saveScan(me, second);
+
+    const res = await stranger.get(`/api/scans/${secondId}`);
+    expect(res.body.report.changes).toMatchObject({
+      previous: { score: first.score, grade: first.grade },
+      fixed: [
+        { checkId: 'http.no_https_redirect', title: 'Visitors are moved to the secure version of your site' },
+        { checkId: 'header.hsts_missing', title: 'Browsers are told to always use a secure connection' },
+      ],
+      appeared: ['header.server_version_leak'],
+      stillFailing: 1,
+    });
+
+    const list = await stranger.get('/api/scans').query({ hostname: 'shop.example' });
+    expect(list.body.scans.map((s: { change: unknown }) => s.change)).toEqual([
+      { scoreDelta: second.score - first.score, fixed: 2, appeared: 1 },
+      null,
+    ]);
   });
 });
 

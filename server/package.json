@@ -8,6 +8,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "scan": "node scripts/scan.ts",
+    "seed:history": "node --env-file-if-exists=../.env scripts/seed-history.ts",
     "db:create": "node --env-file-if-exists=../.env scripts/db-create.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
