@@ -4,11 +4,11 @@ import { ApiStatus } from '@/components/ApiStatus';
 import { Logo } from '@/components/Logo';
 import { cn } from '@/lib/utils';
 
-/** Sections of the signed-in app. Reports arrive with saved check history (later phase). */
+/** Sections of the signed-in app. */
 const NAV: { to?: string; label: string }[] = [
   { to: '/home', label: 'Home' },
   { to: '/websites', label: 'Websites' },
-  { label: 'Reports' },
+  { to: '/reports', label: 'Reports' },
 ];
 
 /** Frame for signed-in pages: app header with navigation and account menu. */

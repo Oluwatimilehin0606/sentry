@@ -15,6 +15,8 @@ export type ReportFinding = {
 };
 
 export type ScanReport = {
+  /** Set once the check is saved (every finished check is). */
+  id?: string;
   hostname: string;
   /** "light" = what any browser sees; "full" adds private files (verified owners only). */
   mode: 'full' | 'light';

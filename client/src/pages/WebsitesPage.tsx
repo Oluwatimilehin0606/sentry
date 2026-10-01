@@ -1,15 +1,14 @@
 import { Check, Globe, Loader2, MoreHorizontal, Plus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { AddWebsiteDialog } from '@/components/AddWebsiteDialog';
 import { FormError } from '@/components/FormError';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useSession } from '@/lib/auth-client';
 import { useDomains, useRemoveDomain, type Domain } from '@/lib/domains';
 import { GRADE_COLOR } from '@/lib/grading';
-import { loadRecentChecks, type RecentCheck } from '@/lib/recent-checks';
+import { latestPerWebsite, useRecentScans, type ScanSummary } from '@/lib/reports';
 import { cn } from '@/lib/utils';
 
 const dateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -53,7 +52,7 @@ function RemoveDialog({ domain, onClose }: { domain: Domain | null; onClose: () 
   );
 }
 
-function WebsiteRow({ domain, last, onRemove }: { domain: Domain; last?: RecentCheck; onRemove: () => void }) {
+function WebsiteRow({ domain, last, onRemove }: { domain: Domain; last?: ScanSummary; onRemove: () => void }) {
   const navigate = useNavigate();
   const verified = !!domain.verifiedAt;
   return (
@@ -86,7 +85,7 @@ function WebsiteRow({ domain, last, onRemove }: { domain: Domain; last?: RecentC
               <span className="font-display text-lg font-bold" style={{ color: GRADE_COLOR[last.grade] }}>
                 {last.grade}
               </span>
-              {last.score} · {when(last.at)}
+              {last.score} · {when(last.scannedAt)}
             </>
           ) : (
             <span className="text-muted-foreground">Not checked yet</span>
@@ -139,16 +138,10 @@ function WebsiteRow({ domain, last, onRemove }: { domain: Domain; last?: RecentC
 /* ---------- Page ---------- */
 
 export function WebsitesPage() {
-  const { data: session } = useSession();
-  const userId = session?.user.id ?? '';
   const sites = useDomains();
+  const recent = latestPerWebsite(useRecentScans().data);
   const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState<Domain | null>(null);
-  const [recent, setRecent] = useState<RecentCheck[]>([]);
-
-  useEffect(() => {
-    if (userId) setRecent(loadRecentChecks(userId));
-  }, [userId]);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 sm:py-12">

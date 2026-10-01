@@ -221,6 +221,8 @@ The core of the product. Built as a **standalone library** in `server/src/scanne
 - A Playwright test runs the whole flow against a local fixture site.
 - Tag `v0.1.0-mvp`.
 
+> **Phase 5 status (2026-10-01): saving and reports done; end-to-end test and MVP tag next.** Every finished check is saved (migration `0001_saved_scans`: scans belong to a user and hostname, since light checks can be of any site) and reopens identically with today's wording; reports use one fixed order (severity, then catalog order). 50 checks per account per 24 hours. Website: Reports page (newest first, filter per website, "Show older checks", phone layout), a page per report with "Check again", Home shows the latest saved report and recent checks from the server (the browser-only list is gone), Reports in the menu. **Change from the plan:** no pg-boss queue for manual checks, which already stream live progress and finish in seconds; pg-boss arrives with scheduled re-checks in Phase 7.
+
 ---
 
 ## Phase 6 — Dashboard & History (Days 17–19)

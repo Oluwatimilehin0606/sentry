@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, Check, Globe, Loader2, Minus, Radar } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useSession } from '@/lib/auth-client';
 import { isCoveredBy, useDomains } from '@/lib/domains';
 import { GRADE_COLOR, nextStep } from '@/lib/grading';
-import { loadRecentChecks, saveRecentCheck, type RecentCheck } from '@/lib/recent-checks';
+import { latestPerWebsite, timeAgo, useRecentScans, useSavedReport } from '@/lib/reports';
 import { runScan, SCAN_STEPS, type Grade, type ScanProgress, type ScanReport as Report, type ScanStep } from '@/lib/scan';
 import { cn } from '@/lib/utils';
 
@@ -245,19 +245,19 @@ function NoReportYet({ hasRecent }: { hasRecent: boolean }) {
 /** The signed-in home: check a website, see the latest report, and what to do next. */
 export function HomePage() {
   const { data: session } = useSession();
-  const userId = session?.user.id ?? '';
   const firstName = session?.user.name.split(' ')[0];
   const [domain, setDomain] = useState('');
-  const [recent, setRecent] = useState<RecentCheck[]>([]);
   const reportRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState<Progress>({});
   const sites = useDomains();
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (userId) setRecent(loadRecentChecks(userId));
-  }, [userId]);
+  const queryClient = useQueryClient();
+  const saved = useRecentScans();
+  const recent = latestPerWebsite(saved.data).slice(0, 5);
+  // Before any check in this visit, show the account's latest saved report.
+  const latestSaved = useSavedReport(saved.data?.[0]?.id);
 
   const scan = useMutation({
     mutationFn: async (hostname: string) => {
@@ -266,13 +266,11 @@ export function HomePage() {
       await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
       return report;
     },
-    onSuccess: (report) => {
-      if (!userId) return;
-      setRecent(
-        saveRecentCheck(userId, { hostname: report.hostname, grade: report.grade, score: report.score, at: report.scannedAt }),
-      );
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['scans'] });
     },
   });
+  const shown = scan.data ?? (scan.isPending || scan.isError ? undefined : latestSaved.data);
 
   useEffect(() => {
     if (scan.data) reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -337,8 +335,13 @@ export function HomePage() {
         <div ref={reportRef} className="flex scroll-mt-6 flex-col gap-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="font-display text-2xl font-bold tracking-tight">Latest report</h2>
-            {scan.data && (
-              <span className="text-sm text-muted-foreground">{scan.data.hostname} · checked just now</span>
+            {shown && (
+              <span className="text-sm text-muted-foreground">
+                {shown.hostname} · checked {timeAgo(shown.scannedAt)} ·{' '}
+                <Link to="/reports" className="font-semibold text-primary hover:underline">
+                  All reports
+                </Link>
+              </span>
             )}
           </div>
 
@@ -355,17 +358,18 @@ export function HomePage() {
               progress={progress}
               light={!isCoveredBy(sites.data, scan.variables ?? domain)}
             />
-          ) : scan.data ? (
-            <ScanReport report={scan.data} />
+          ) : shown ? (
+            <ScanReport report={shown} />
           ) : (
-            !scan.isError && <NoReportYet hasRecent={recent.length > 0} />
+            !scan.isError &&
+            !(saved.isPending || latestSaved.isLoading) && <NoReportYet hasRecent={recent.length > 0} />
           )}
         </div>
 
         <aside className="flex flex-col gap-5">
-          {scan.data && !scan.isPending && <NextStepCard report={scan.data} />}
+          {shown && !scan.isPending && <NextStepCard report={shown} />}
           <YourWebsites />
-          <HowGradesWork current={scan.data?.grade} />
+          <HowGradesWork current={shown?.grade} />
         </aside>
       </div>
     </>

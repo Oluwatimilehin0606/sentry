@@ -11,6 +11,8 @@ const WebsitesPage = lazy(() => import('@/pages/WebsitesPage').then((m) => ({ de
 const VerifyWebsitePage = lazy(() =>
   import('@/pages/VerifyWebsitePage').then((m) => ({ default: m.VerifyWebsitePage })),
 );
+const ReportsPage = lazy(() => import('@/pages/ReportsPage').then((m) => ({ default: m.ReportsPage })));
+const ReportPage = lazy(() => import('@/pages/ReportPage').then((m) => ({ default: m.ReportPage })));
 const AccountPage = lazy(() => import('@/pages/AccountPage').then((m) => ({ default: m.AccountPage })));
 const SignInPage = lazy(() => import('@/pages/SignInPage').then((m) => ({ default: m.SignInPage })));
 const SignUpPage = lazy(() => import('@/pages/SignUpPage').then((m) => ({ default: m.SignUpPage })));
@@ -35,6 +37,8 @@ export function App() {
               <Route path="home" element={<HomePage />} />
               <Route path="websites" element={<WebsitesPage />} />
               <Route path="websites/:hostname" element={<VerifyWebsitePage />} />
+              <Route path="reports" element={<ReportsPage />} />
+              <Route path="reports/:id" element={<ReportPage />} />
               <Route path="account" element={<AccountPage />} />
             </Route>
           </Route>

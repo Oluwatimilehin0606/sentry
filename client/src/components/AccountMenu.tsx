@@ -1,4 +1,4 @@
-import { ChevronDown, Globe, House, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
+import { ChevronDown, FileText, Globe, House, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
@@ -55,6 +55,12 @@ export function AccountMenu() {
           <Link to="/websites">
             <Globe aria-hidden="true" />
             Websites
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="md:hidden">
+          <Link to="/reports">
+            <FileText aria-hidden="true" />
+            Reports
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
