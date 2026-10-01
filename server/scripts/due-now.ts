@@ -17,14 +17,15 @@ const HOST = 'bakery.test';
 const [account] = await db.select().from(user).where(eq(user.email, email));
 if (!account) throw new Error('No account with that email.');
 
-// A good previous check (yesterday), so this one counts as "got worse".
-const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+// A good check a moment ago: the newest one, so the automatic check is compared with it and
+// counts as "got worse" (the pretend site is weak).
+const aMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
 await saveScan(
   account.id,
   buildReport({
     hostname: HOST,
     mode: 'full',
-    scannedAt: yesterday,
+    scannedAt: aMinuteAgo,
     durationMs: 900,
     findings: [
       { checkId: 'tls.no_https', status: 'pass' },
