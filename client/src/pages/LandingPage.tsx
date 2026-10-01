@@ -55,8 +55,8 @@ const PROMISES = ['Free', 'No technical knowledge needed', 'Results in seconds']
 const STEPS = [
   { title: 'Create a free account', body: 'It takes under a minute. All you need is an email address.' },
   {
-    title: 'Add your website and prove it’s yours',
-    body: 'Copy one short line into your domain’s settings. We show you exactly what to paste and where.',
+    title: 'Check your website',
+    body: 'Enter your web address for a quick check. Prove it’s yours with one short line in your domain’s settings to also check for exposed private files.',
   },
   {
     title: 'Get your grade and a fix list',
@@ -86,8 +86,8 @@ const CHECKS: { Icon: LucideIcon; title: string; body: string }[] = [
 const SAFETY: { Icon: LucideIcon; title: string; body: string }[] = [
   {
     Icon: Globe,
-    title: 'Only websites you own',
-    body: 'You prove a website is yours before Sentry checks it, so nobody can use Sentry against someone else’s site.',
+    title: 'Deeper checks for owners only',
+    body: 'Anyone can run a quick check, which only sees what a web browser sees. Looking for exposed private files needs proof that the website is yours.',
   },
   {
     Icon: Activity,

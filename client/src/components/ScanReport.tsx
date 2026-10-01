@@ -1,5 +1,7 @@
 import { Check, CheckCircle2, ChevronDown } from 'lucide-react';
-import { useRef, useState, type ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
+import { CopyButton } from '@/components/CopyButton';
+import { LightCheckBanner } from '@/components/LightCheckBanner';
 import { GRADE_COLOR } from '@/lib/grading';
 import type { ReportFinding, ScanReport as Report, Severity } from '@/lib/scan';
 import { cn } from '@/lib/utils';
@@ -22,38 +24,12 @@ const TERM = 'text-xs font-semibold tracking-[0.06em] text-muted-foreground uppe
 
 /** The exact technical setting, set apart so an owner can copy it to whoever runs their site. */
 function DeveloperNote({ text }: { text: string }) {
-  const [label, setLabel] = useState('Copy');
   const codeRef = useRef<HTMLElement>(null);
-  const timer = useRef<number>(undefined);
-  const flash = (next: string) => {
-    setLabel(next);
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setLabel('Copy'), 2500);
-  };
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      flash('Copied');
-    } catch {
-      // Clipboard blocked by the browser: select the text so it can be copied by hand.
-      const range = document.createRange();
-      if (codeRef.current) range.selectNodeContents(codeRef.current);
-      window.getSelection()?.removeAllRanges();
-      window.getSelection()?.addRange(range);
-      flash('Selected, press Ctrl+C');
-    }
-  };
   return (
     <dd className="mt-2.5 flex flex-col gap-1.5 rounded-lg bg-muted px-3 py-2.5">
       <div className="flex items-center justify-between gap-3">
         <span className={TERM}>For your developer</span>
-        <button
-          type="button"
-          onClick={copy}
-          className="h-7 rounded-md border bg-card px-2.5 text-[0.8125rem] font-semibold transition-colors hover:bg-background focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-        >
-          <span aria-live="polite">{label}</span>
-        </button>
+        <CopyButton text={text} selectRef={codeRef} label="Copy the setting for your developer" />
       </div>
       <code ref={codeRef} className="font-mono text-[0.8125rem] [overflow-wrap:anywhere]">
         {text}
@@ -118,6 +94,11 @@ export function ScanReport({ report }: { report: Report }) {
             <div className="flex items-baseline gap-2">
               <span className="font-display text-[2.125rem] leading-none font-bold tabular-nums">{report.score}</span>
               <span className="text-muted-foreground">/ 100</span>
+              {report.mode === 'light' && (
+                <span className="ml-1.5 self-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-bold text-muted-foreground">
+                  Light check
+                </span>
+              )}
             </div>
             <div role="img" aria-label={`Score ${report.score} out of 100`} className="h-2 overflow-hidden rounded-full bg-muted">
               <span className="block h-full rounded-full" style={{ width: `${report.score}%`, background: color }} />
@@ -135,6 +116,8 @@ export function ScanReport({ report }: { report: Report }) {
           <Pill className="bg-pass-soft text-pass">{passed.length} passed</Pill>
         </div>
       </div>
+
+      {report.mode === 'light' && <LightCheckBanner hostname={report.hostname} />}
 
       {failed.length === 0 && (
         <div className="flex gap-3 rounded-[14px] border bg-pass-soft p-5">

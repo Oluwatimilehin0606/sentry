@@ -16,6 +16,8 @@ export type ReportFinding = {
 
 export type ScanReport = {
   hostname: string;
+  /** "light" = what any browser sees; "full" adds private files (verified owners only). */
+  mode: 'full' | 'light';
   finalUrl?: string;
   scannedAt: string;
   durationMs: number;

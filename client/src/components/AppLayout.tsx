@@ -4,8 +4,12 @@ import { ApiStatus } from '@/components/ApiStatus';
 import { Logo } from '@/components/Logo';
 import { cn } from '@/lib/utils';
 
-/** Sections of the signed-in app. Websites and Reports arrive with monitoring (later phases). */
-const NAV: { to?: string; label: string }[] = [{ to: '/home', label: 'Home' }, { label: 'Websites' }, { label: 'Reports' }];
+/** Sections of the signed-in app. Reports arrive with saved check history (later phase). */
+const NAV: { to?: string; label: string }[] = [
+  { to: '/home', label: 'Home' },
+  { to: '/websites', label: 'Websites' },
+  { label: 'Reports' },
+];
 
 /** Frame for signed-in pages: app header with navigation and account menu. */
 export function AppLayout() {

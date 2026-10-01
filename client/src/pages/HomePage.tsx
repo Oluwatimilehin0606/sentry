@@ -1,10 +1,14 @@
 import { useMutation } from '@tanstack/react-query';
 import { AlertCircle, Check, Globe, Loader2, Minus, Radar } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
+import { AddWebsiteDialog } from '@/components/AddWebsiteDialog';
 import { CommandBar } from '@/components/CommandBar';
 import { MonitorWave } from '@/components/MonitorWave';
 import { ScanReport } from '@/components/ScanReport';
+import { Button } from '@/components/ui/button';
 import { useSession } from '@/lib/auth-client';
+import { isCoveredBy, useDomains } from '@/lib/domains';
 import { GRADE_COLOR, nextStep } from '@/lib/grading';
 import { loadRecentChecks, saveRecentCheck, type RecentCheck } from '@/lib/recent-checks';
 import { runScan, SCAN_STEPS, type Grade, type ScanProgress, type ScanReport as Report, type ScanStep } from '@/lib/scan';
@@ -26,27 +30,53 @@ function greeting(date = new Date()): string {
 /* ---------- Sidebar ---------- */
 
 function YourWebsites() {
+  const sites = useDomains();
+  const [adding, setAdding] = useState(false);
+  const list = sites.data ?? [];
+
   return (
-    <section aria-labelledby="sites-h" className="flex flex-col gap-3.5 rounded-[14px] border border-dashed border-input bg-card p-5">
-      <span className="grid size-[42px] place-items-center rounded-[10px] bg-primary-soft text-primary">
-        <Globe className="size-[22px]" aria-hidden="true" />
-      </span>
-      <div className="flex flex-col gap-1">
+    <section aria-labelledby="sites-h" className="flex flex-col gap-3.5 rounded-[14px] border bg-card p-5">
+      <div className="flex items-center justify-between gap-3">
         <h2 id="sites-h" className="font-display text-xl font-bold tracking-tight">
           Your websites
         </h2>
-        <p className="text-[0.9375rem] text-muted-foreground">
-          Add a website, prove you own it, and Sentry will re-check it every week and email you if the grade drops.
-        </p>
+        {list.length > 0 && (
+          <Link to="/websites" className="rounded-md text-sm font-semibold text-primary hover:underline">
+            Manage
+          </Link>
+        )}
       </div>
-      <button
-        type="button"
-        disabled
-        className="flex h-[42px] items-center justify-center gap-2 rounded-lg border bg-muted font-semibold text-muted-foreground"
-      >
+      {list.length === 0 ? (
+        <p className="text-[0.9375rem] text-muted-foreground">
+          {sites.isPending
+            ? 'Loading…'
+            : 'Add your website and prove it’s yours to get its full check, including private files.'}
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-2.5 text-[0.9375rem]">
+          {list.slice(0, 4).map((d) => (
+            <li key={d.id} className="flex items-center justify-between gap-3">
+              <span className="min-w-0 truncate">{d.hostname}</span>
+              {d.verifiedAt ? (
+                <span className="flex shrink-0 items-center gap-1.5 text-sm font-semibold text-pass">
+                  <Check className="size-3.5" strokeWidth={3} aria-hidden="true" />
+                  Verified
+                </span>
+              ) : (
+                <Link to={`/websites/${d.hostname}`} className="shrink-0 text-sm font-semibold text-medium hover:underline">
+                  Waiting for proof
+                </Link>
+              )}
+            </li>
+          ))}
+          {list.length > 4 && <li className="text-sm text-muted-foreground">and {list.length - 4} more</li>}
+        </ul>
+      )}
+      <Button variant="outline" className="h-[42px]" onClick={() => setAdding(true)}>
+        {list.length === 0 && <Globe aria-hidden="true" />}
         Add website
-        <span className="rounded-full bg-card px-1.5 py-px text-[0.6875rem] font-bold">Coming soon</span>
-      </button>
+      </Button>
+      <AddWebsiteDialog open={adding} onOpenChange={setAdding} />
     </section>
   );
 }
@@ -146,7 +176,7 @@ function StepIcon({ state }: { state?: ScanProgress }) {
 }
 
 /** Ticks each part off as the server reports it finished; a tick means checked, not passed. */
-function Checking({ hostname, progress }: { hostname: string; progress: Progress }) {
+function Checking({ hostname, progress, light }: { hostname: string; progress: Progress; light: boolean }) {
   const finished = SCAN_STEPS.every((step) => progress[step]);
   return (
     <div role="status" className="flex flex-col gap-4 rounded-[14px] border bg-card p-6">
@@ -162,7 +192,12 @@ function Checking({ hostname, progress }: { hostname: string; progress: Progress
       </div>
       <ul className="flex flex-col gap-3 text-[0.9375rem]">
         {SCAN_STEPS.map((step) => {
-          const state = progress[step];
+          // A light check never looks at private files, so show that from the start.
+          const state =
+            progress[step] ??
+            (light && step === 'files'
+              ? ({ step, status: 'skipped', note: 'for verified owners only' } satisfies ScanProgress)
+              : undefined);
           const label = STEP_LABEL[step];
           return (
             <li key={step} className="flex items-center gap-3">
@@ -178,7 +213,11 @@ function Checking({ hostname, progress }: { hostname: string; progress: Progress
           );
         })}
       </ul>
-      <p className="text-sm text-muted-foreground">{finished ? 'Preparing your report…' : 'This takes about 10 seconds.'}</p>
+      <p className="text-sm text-muted-foreground">{finished
+          ? 'Preparing your report…'
+          : light
+            ? 'This takes a few seconds.'
+            : 'This takes about 10 seconds.'}</p>
     </div>
   );
 }
@@ -212,6 +251,9 @@ export function HomePage() {
   const [recent, setRecent] = useState<RecentCheck[]>([]);
   const reportRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState<Progress>({});
+  const sites = useDomains();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (userId) setRecent(loadRecentChecks(userId));
@@ -235,6 +277,15 @@ export function HomePage() {
   useEffect(() => {
     if (scan.data) reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [scan.data]);
+
+  // Arriving from "Full check" or "Run the full check" starts that check straight away (once).
+  const requested = (location.state as { check?: string } | null)?.check;
+  useEffect(() => {
+    if (!requested) return;
+    navigate(location.pathname, { replace: true, state: null });
+    check(requested);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per request
+  }, [requested]);
 
   const check = (hostname: string) => {
     setDomain(hostname);
@@ -299,7 +350,11 @@ export function HomePage() {
           )}
 
           {scan.isPending ? (
-            <Checking hostname={scan.variables ?? domain} progress={progress} />
+            <Checking
+              hostname={scan.variables ?? domain}
+              progress={progress}
+              light={!isCoveredBy(sites.data, scan.variables ?? domain)}
+            />
           ) : scan.data ? (
             <ScanReport report={scan.data} />
           ) : (

@@ -15,6 +15,7 @@ const finding = (checkId: string, severity: Severity, status: 'pass' | 'fail' = 
 
 const report = (score: number, grade: Grade, findings: ReportFinding[]): ScanReport => ({
   hostname: 'yourbakery.example',
+  mode: 'full',
   scannedAt: '2026-09-29T12:00:00Z',
   durationMs: 900,
   score,

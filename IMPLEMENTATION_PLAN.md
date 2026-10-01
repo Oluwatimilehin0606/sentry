@@ -197,6 +197,10 @@ The core of the product. Built as a **standalone library** in `server/src/scanne
 - A real domain you control verified end-to-end through the UI.
 - API tests: unverified scan blocked, wrong token rejected, another user's domain returns 404.
 
+> **Phase 4 status (2026-10-01): done, with one change of approach (approved by the product owner).** Instead of refusing unverified scans, Sentry runs a **light check** for any website (connection, certificate, browser protections: only what any browser sees, like SSL Labs or securityheaders.com) and keeps the **full check** (the private-files probe) for websites the account has verified. A verified domain also covers its subdomains. Built: `/api/domains` (list, add with a per-account `sentry-verify=<token>`, remove, verify via `dns.promises.resolveTxt`, rate-limited); the scan route picks light/full; reports carry `mode`. Website: Websites page (status, last grade, Full check / Finish verifying, remove with confirmation), add-website dialog, "Prove it's yours" page (Type/Name/Value with Copy, provider help for Cloudflare, cPanel/Whogohost, Namecheap, GoDaddy), "Light check" label and banner on reports, live "Your websites" card on home, landing wording. Tests: 13 new server tests (routes, ownership isolation, chunked/quoted TXT values, light/full decision, a light check making no file requests) and 7 client tests.
+>
+> For the live demo the team needs a domain it controls (they no longer control mechspec.com.ng); verify it at least a day before presenting.
+
 ---
 
 ## Phase 5 — Scan API & Report UI (Days 13–17) — **MVP milestone**
