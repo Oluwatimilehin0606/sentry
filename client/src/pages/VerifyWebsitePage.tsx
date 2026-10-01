@@ -100,7 +100,7 @@ function Verified({ domain }: { domain: Domain }) {
           now or leave it; Sentry won’t need it again.
         </span>
         <Button
-          className="h-10 self-start bg-pass px-4 text-white hover:bg-pass/90"
+          className="h-10 self-start bg-pass px-4 text-white hover:bg-pass/90 dark:text-[#0b111c]"
           onClick={() => navigate('/home', { state: { check: domain.hostname } })}
         >
           Run the full check
