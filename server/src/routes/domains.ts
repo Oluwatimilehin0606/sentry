@@ -1,0 +1,140 @@
+import { and, asc, count, eq } from 'drizzle-orm';
+import { Router } from 'express';
+import { rateLimit } from 'express-rate-limit';
+import { z } from 'zod';
+import { db } from '../db/client.ts';
+import { domains } from '../db/schema.ts';
+import { hasVerifyRecord, newVerifyToken, TXT_PREFIX } from '../domains/verify.ts';
+import { requireAuth } from '../middleware/require-auth.ts';
+import { normalizeHostname } from '../scanner/domain.ts';
+
+export const domainsRouter = Router();
+domainsRouter.use(requireAuth);
+
+const MAX_DOMAINS = 20;
+
+type DomainRow = typeof domains.$inferSelect;
+
+/** What the website needs, including the record to add (only ever sent to its owner). */
+function present(row: DomainRow) {
+  return {
+    id: row.id,
+    hostname: row.hostname,
+    verifiedAt: row.verifiedAt,
+    createdAt: row.createdAt,
+    record: { type: 'TXT', value: `${TXT_PREFIX}${row.verifyToken}` },
+  };
+}
+
+domainsRouter.get('/', async (_req, res) => {
+  const rows = await db
+    .select()
+    .from(domains)
+    .where(eq(domains.userId, res.locals.user!.id))
+    .orderBy(asc(domains.createdAt));
+  res.json({ domains: rows.map(present) });
+});
+
+const AddBody = z.object({ domain: z.string().max(300) });
+
+domainsRouter.post('/', async (req, res) => {
+  const userId = res.locals.user!.id;
+  const parsed = AddBody.safeParse(req.body);
+  const hostname = parsed.success ? normalizeHostname(parsed.data.domain) : null;
+  if (!hostname) {
+    res.status(400).json({ error: 'Enter a valid domain, like yourbakery.com.' });
+    return;
+  }
+
+  const [existing] = await db
+    .select()
+    .from(domains)
+    .where(and(eq(domains.userId, userId), eq(domains.hostname, hostname)));
+  if (existing) {
+    // Adding the same website twice just returns it, so the website can carry on to verifying.
+    res.json({ domain: present(existing) });
+    return;
+  }
+
+  const [counted] = await db.select({ total: count() }).from(domains).where(eq(domains.userId, userId));
+  if ((counted?.total ?? 0) >= MAX_DOMAINS) {
+    res.status(400).json({ error: `You can add up to ${MAX_DOMAINS} websites. Remove one to add another.` });
+    return;
+  }
+
+  const [row] = await db
+    .insert(domains)
+    .values({ userId, hostname, verifyToken: newVerifyToken() })
+    .onConflictDoNothing()
+    .returning();
+  if (!row) {
+    // Lost a race with a second click: return the one that won.
+    const [again] = await db
+      .select()
+      .from(domains)
+      .where(and(eq(domains.userId, userId), eq(domains.hostname, hostname)));
+    res.json({ domain: present(again!) });
+    return;
+  }
+  res.status(201).json({ domain: present(row) });
+});
+
+const Id = z.uuid();
+
+/** Finds one of the signed-in user's websites; other people's look exactly like missing ones. */
+async function ownDomain(userId: string, id: string): Promise<DomainRow | undefined> {
+  if (!Id.safeParse(id).success) return undefined;
+  const [row] = await db
+    .select()
+    .from(domains)
+    .where(and(eq(domains.id, id), eq(domains.userId, userId)));
+  return row;
+}
+
+const NOT_FOUND = { error: 'We couldn’t find that website in your account.' };
+
+domainsRouter.delete('/:id', async (req, res) => {
+  const userId = res.locals.user!.id;
+  const row = await ownDomain(userId, req.params.id);
+  if (!row) {
+    res.status(404).json(NOT_FOUND);
+    return;
+  }
+  await db.delete(domains).where(and(eq(domains.id, row.id), eq(domains.userId, userId)));
+  res.status(204).end();
+});
+
+domainsRouter.post(
+  '/:id/verify',
+  rateLimit({
+    windowMs: 60_000,
+    limit: 20,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    keyGenerator: (_req, res) => `verify:${res.locals.user!.id}`,
+    message: { error: 'That’s a lot of checks in a short time. Please wait a minute and try again.' },
+  }),
+  async (req, res) => {
+    const row = await ownDomain(res.locals.user!.id, String(req.params.id));
+    if (!row) {
+      res.status(404).json(NOT_FOUND);
+      return;
+    }
+    if (row.verifiedAt) {
+      res.json({ verified: true, domain: present(row) });
+      return;
+    }
+
+    const result = await hasVerifyRecord(row.hostname, row.verifyToken);
+    if (!result.found) {
+      res.json({ verified: false, reason: result.reason, domain: present(row) });
+      return;
+    }
+    const [updated] = await db
+      .update(domains)
+      .set({ verifiedAt: new Date() })
+      .where(eq(domains.id, row.id))
+      .returning();
+    res.json({ verified: true, domain: present(updated!) });
+  },
+);

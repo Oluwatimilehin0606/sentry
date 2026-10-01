@@ -20,6 +20,11 @@ export type ScanStep = (typeof SCAN_STEPS)[number];
 /** "done" means the part was checked (not that it passed); "skipped" means it couldn't run. */
 export type ScanProgress = { step: ScanStep; status: 'done' | 'skipped'; note?: string };
 export type OnProgress = (progress: ScanProgress) => void;
+/**
+ * "light" looks only at what any browser sees (connection, certificate, browser protections) and
+ * is what anyone may run. "full" also asks for private files, so it's only for verified owners.
+ */
+export type ScanMode = 'full' | 'light';
 const SEVERITY_RANK = { critical: 0, medium: 1, low: 2 } as const;
 
 /** Only follow redirects that stay on the same site (e.g. example.com → www.example.com/en). */
@@ -67,7 +72,12 @@ function probeOrigin(ctx: ScanContext, hostname: string, home: HttpResult | null
   return null;
 }
 
-export function scanHost(hostname: string, ctx: ScanContext = publicContext(), onProgress: OnProgress = () => {}) {
+export function scanHost(
+  hostname: string,
+  ctx: ScanContext = publicContext(),
+  onProgress: OnProgress = () => {},
+  mode: ScanMode = 'full',
+) {
   let timer: NodeJS.Timeout | undefined;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(
@@ -75,10 +85,10 @@ export function scanHost(hostname: string, ctx: ScanContext = publicContext(), o
       SCAN_BUDGET_MS,
     );
   });
-  return Promise.race([runScan(hostname, ctx, onProgress), timeout]).finally(() => clearTimeout(timer));
+  return Promise.race([runScan(hostname, ctx, onProgress, mode), timeout]).finally(() => clearTimeout(timer));
 }
 
-async function runScan(hostname: string, ctx: ScanContext, onProgress: OnProgress) {
+async function runScan(hostname: string, ctx: ScanContext, onProgress: OnProgress, mode: ScanMode) {
   const started = Date.now();
   await ctx.assertTarget(hostname);
 
@@ -130,7 +140,7 @@ async function runScan(hostname: string, ctx: ScanContext, onProgress: OnProgres
   );
 
   // The slower checks run side by side.
-  const origin = probeOrigin(ctx, hostname, home, httpCheck);
+  const origin = mode === 'full' ? probeOrigin(ctx, hostname, home, httpCheck) : null;
   const [legacy, paths] = await Promise.all([
     (httpsAnswered ? checkLegacyTls(ctx, hostname) : Promise.resolve(null)).then((result) => {
       onProgress({ step: 'connection', status: 'done' });
@@ -140,7 +150,12 @@ async function runScan(hostname: string, ctx: ScanContext, onProgress: OnProgres
       onProgress(
         result.length > 0
           ? { step: 'files', status: 'done' }
-          : { step: 'files', status: 'skipped', note: origin ? 'site didn’t answer' : 'no connection we could use' },
+          : {
+              step: 'files',
+              status: 'skipped',
+              note:
+                mode === 'light' ? 'for verified owners only' : origin ? 'site didn’t answer' : 'no connection we could use',
+            },
       );
       return result;
     }),
@@ -169,6 +184,7 @@ async function runScan(hostname: string, ctx: ScanContext, onProgress: OnProgres
 
   return {
     hostname,
+    mode,
     finalUrl,
     scannedAt: new Date().toISOString(),
     durationMs: Date.now() - started,

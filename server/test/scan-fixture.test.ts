@@ -161,6 +161,19 @@ describe('exposed files', () => {
   });
 });
 
+describe('light check', () => {
+  it('never asks for private files, and says why that part was skipped', async () => {
+    fixture = await startFixture({ headers: SECURE_HEADERS, files: { '/.env': { body: 'DB_PASSWORD=x\nAPI_KEY=y\n' } } });
+    const events: ScanProgress[] = [];
+    const report = await scanHost('localhost', fixture.ctx, (p) => events.push(p), 'light');
+    expect(report.mode).toBe('light');
+    expect(report.findings.some((f) => f.checkId.startsWith('path.'))).toBe(false);
+    expect(events.find((e) => e.step === 'files')).toMatchObject({ status: 'skipped', note: 'for verified owners only' });
+    // Only the homepage was requested: no file probes, not even the "can't exist" address.
+    expect(fixture.requests.every((url) => url === '/')).toBe(true);
+  });
+});
+
 describe('plain-English coverage', () => {
   it('can report every check both ways, and every result it reports has an explanation', async () => {
     const seen = new Set<string>();

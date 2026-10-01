@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import { auth } from './auth.ts';
 import { logger } from './logger.ts';
+import { domainsRouter } from './routes/domains.ts';
 import { healthRouter } from './routes/health.ts';
 import { meRouter } from './routes/me.ts';
 import { scanRouter } from './routes/scan.ts';
@@ -39,6 +40,7 @@ export function createApp() {
 
   app.use('/api/health', healthRouter);
   app.use('/api/me', meRouter);
+  app.use('/api/domains', domainsRouter);
   app.use('/api/scan', scanRouter);
 
   app.use('/api', (_req, res) => {
