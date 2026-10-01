@@ -47,7 +47,8 @@ export default defineConfig({
     {
       command: 'node e2e/fixture-site.ts',
       url: 'http://127.0.0.1:8081/',
-      reuseExistingServer: false,
+      // `npm run demo:site` serves the same pretend website (and writes its certificate), so reuse it.
+      reuseExistingServer: true,
     },
     {
       command: 'node server/src/index.ts',
