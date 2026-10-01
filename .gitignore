@@ -11,3 +11,8 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .claude/
+
+# Browser tests
+e2e/.tmp/
+test-results/
+playwright-report/

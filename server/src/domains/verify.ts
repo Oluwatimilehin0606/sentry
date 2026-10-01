@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import dns from 'node:dns';
+import { e2eTxtRecords } from '../e2e.ts';
 
 /**
  * Ownership proof: the user adds a DNS TXT record "sentry-verify=<token>" to their domain.
@@ -14,11 +15,13 @@ export function newVerifyToken(): string {
 
 export type TxtCheck = { found: true } | { found: false; reason: 'not_found' | 'no_domain' | 'dns_error' };
 
-export async function hasVerifyRecord(hostname: string, token: string): Promise<TxtCheck> {
-  let records: string[][];
+async function lookupTxt(hostname: string): Promise<string[][] | Exclude<TxtCheck, { found: true }>> {
+  // Browser tests "publish" records for their pretend websites in a file instead.
+  const fake = e2eTxtRecords(hostname);
+  if (fake) return fake;
   try {
     // Called through dns.promises at call time so tests can stand in for real DNS.
-    records = await dns.promises.resolveTxt(hostname);
+    return await dns.promises.resolveTxt(hostname);
   } catch (err) {
     const code = (err as NodeJS.ErrnoException).code;
     // ENODATA: the name exists but has no TXT records yet, which is the usual "not added yet".
@@ -26,6 +29,11 @@ export async function hasVerifyRecord(hostname: string, token: string): Promise<
     if (code === 'ENOTFOUND') return { found: false, reason: 'no_domain' };
     return { found: false, reason: 'dns_error' };
   }
+}
+
+export async function hasVerifyRecord(hostname: string, token: string): Promise<TxtCheck> {
+  const records = await lookupTxt(hostname);
+  if (!Array.isArray(records)) return records;
   // Long TXT values arrive split into chunks; providers also sometimes keep the quotes.
   const expected = `${TXT_PREFIX}${token}`;
   const found = records.some((chunks) => chunks.join('').trim().replace(/^"|"$/g, '') === expected);

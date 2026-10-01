@@ -1,4 +1,5 @@
 import type { LookupFunction } from 'node:net';
+import { e2eSite } from '../e2e.ts';
 import { assertPublicHost, guardedLookup } from './target.ts';
 
 /** Total time allowed for one scan, from first DNS lookup to report. */
@@ -30,9 +31,16 @@ export function publicContext(now = Date.now()): ScanContext {
  * For the local fixture server in tests: connects to this machine only (the reverse of the real
  * guard), on the fixture's ports, trusting the fixture's test certificate authority.
  */
-export function fixtureContext(opts: { httpsPort: number; httpPort: number; ca: string }): ScanContext {
+export function fixtureContext(opts: {
+  httpsPort: number;
+  httpPort: number;
+  ca: string;
+  /** The name the fixture is served as (default localhost). */
+  hostname?: string;
+}): ScanContext {
+  const served = opts.hostname ?? 'localhost';
   const loopbackOnly: LookupFunction = (hostname, options, callback) => {
-    if (hostname !== 'localhost') return callback(new Error('The fixture is only served as localhost'), '');
+    if (hostname !== served) return callback(new Error(`The fixture is only served as ${served}`), '');
     if (options.all) return callback(null, [{ address: '127.0.0.1', family: 4 }]);
     callback(null, '127.0.0.1', 4);
   };
@@ -43,6 +51,14 @@ export function fixtureContext(opts: { httpsPort: number; httpPort: number; ca: 
     ports: { https: opts.httpsPort, http: opts.httpPort },
     deadline: Date.now() + SCAN_BUDGET_MS,
   };
+}
+
+/** The context for a real check: the public one, except for browser-test pretend websites. */
+export function contextFor(hostname: string): ScanContext {
+  const site = e2eSite(hostname);
+  return site
+    ? fixtureContext({ hostname, httpsPort: site.https, httpPort: site.http, ca: site.ca })
+    : publicContext();
 }
 
 /** Builds a URL for the site on the context's ports (defaults are left out). */

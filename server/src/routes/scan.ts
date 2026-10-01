@@ -7,6 +7,7 @@ import { domains } from '../db/schema.ts';
 import { covers } from '../domains/verify.ts';
 import { requireAuth } from '../middleware/require-auth.ts';
 import { normalizeHostname } from '../scanner/domain.ts';
+import { contextFor } from '../scanner/context.ts';
 import { scanHost, type ScanMode, type ScanProgress } from '../scanner/scan.ts';
 import { ScanTargetError } from '../scanner/target.ts';
 import { countScansSince, saveScan } from '../scans/store.ts';
@@ -76,7 +77,7 @@ scanRouter.post('/', async (req, res, next) => {
     try {
       const report = await scanHost(
         hostname,
-        undefined,
+        contextFor(hostname),
         (progress: ScanProgress) => send({ type: 'progress', ...progress }),
         mode,
       );
@@ -95,7 +96,7 @@ scanRouter.post('/', async (req, res, next) => {
   }
 
   try {
-    const report = await scanHost(hostname, undefined, undefined, mode);
+    const report = await scanHost(hostname, contextFor(hostname), undefined, mode);
     const id = await saveScan(userId, report);
     res.json({ id, ...report });
   } catch (err) {

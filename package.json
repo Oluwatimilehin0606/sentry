@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "typecheck": "npm run typecheck -w server && npm run typecheck -w client",
     "test": "npm run test -w server && npm run test -w client",
+    "test:e2e": "playwright test",
     "scan": "npm run scan -w server --",
     "format": "prettier --write .",
     "db:create": "npm run db:create -w server",
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
     "concurrently": "^10.0.5",
     "eslint": "^10.11.0",
     "eslint-plugin-react-hooks": "^7.1.1",

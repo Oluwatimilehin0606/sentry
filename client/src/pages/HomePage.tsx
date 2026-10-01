@@ -278,8 +278,11 @@ export function HomePage() {
 
   // Arriving from "Full check" or "Run the full check" starts that check straight away (once).
   const requested = (location.state as { check?: string } | null)?.check;
+  const handledArrival = useRef<string | null>(null);
   useEffect(() => {
-    if (!requested) return;
+    // Effects can run twice for one arrival (React's development checks), so remember it.
+    if (!requested || handledArrival.current === location.key) return;
+    handledArrival.current = location.key;
     navigate(location.pathname, { replace: true, state: null });
     check(requested);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per request

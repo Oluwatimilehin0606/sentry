@@ -28,10 +28,10 @@ function testCa(): Promise<Pems> {
 
 export type CertKind = 'valid' | 'expiring' | 'expired' | 'wrong-host' | 'self-signed';
 
-async function siteCert(kind: CertKind): Promise<Pems> {
+async function siteCert(kind: CertKind, hostname: string): Promise<Pems> {
   const ca = await testCa();
   const now = Date.now();
-  const name = kind === 'wrong-host' ? 'other.example' : 'localhost';
+  const name = kind === 'wrong-host' ? 'other.example' : hostname;
   const validity =
     kind === 'expired'
       ? { notBeforeDate: new Date(now - 60 * DAY), notAfterDate: new Date(now - DAY) }
@@ -66,14 +66,18 @@ export type FixtureOptions = {
   softNotFound?: boolean;
   /** Plain HTTP on port "80": redirect to HTTPS, serve the site insecurely, or not listen. */
   http?: 'redirect' | 'serve' | 'closed';
+  /** The name it's served as (default localhost). */
+  hostname?: string;
+  /** Fixed ports instead of random free ones (browser tests). */
+  ports?: { https: number; http: number };
 };
 
-export type Fixture = { ctx: ScanContext; requests: string[]; close: () => Promise<void> };
+export type Fixture = { ctx: ScanContext; ca: string; requests: string[]; close: () => Promise<void> };
 
 const HOME = '<!doctype html><html><head><title>Your Bakery</title></head><body>Fresh bread daily</body></html>';
 
-async function listen(server: http.Server): Promise<number> {
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+async function listen(server: http.Server, port = 0): Promise<number> {
+  await new Promise<void>((resolve) => server.listen(port, '127.0.0.1', resolve));
   return (server.address() as AddressInfo).port;
 }
 
@@ -86,6 +90,7 @@ async function closedPort(): Promise<number> {
 }
 
 export async function startFixture(opts: FixtureOptions = {}): Promise<Fixture> {
+  const hostname = opts.hostname ?? 'localhost';
   const requests: string[] = [];
   const files: Record<string, File> = { '/': { body: HOME, type: 'text/html' }, ...opts.files };
 
@@ -111,7 +116,7 @@ export async function startFixture(opts: FixtureOptions = {}): Promise<Fixture> 
   if (opts.https === false) {
     httpsPort = await closedPort();
   } else {
-    const pems = await siteCert(opts.cert ?? 'valid');
+    const pems = await siteCert(opts.cert ?? 'valid', hostname);
     const server = https.createServer(
       {
         key: pems.private,
@@ -121,7 +126,7 @@ export async function startFixture(opts: FixtureOptions = {}): Promise<Fixture> 
       handler(opts.headers ?? {}),
     );
     servers.push(server);
-    httpsPort = await listen(server);
+    httpsPort = await listen(server, opts.ports?.https);
   }
 
   let httpPort: number;
@@ -133,16 +138,17 @@ export async function startFixture(opts: FixtureOptions = {}): Promise<Fixture> 
       httpMode === 'serve'
         ? handler({})
         : (req, res) => {
-            res.writeHead(301, { location: `https://localhost:${httpsPort}${req.url ?? '/'}` });
+            res.writeHead(301, { location: `https://${hostname}:${httpsPort}${req.url ?? '/'}` });
             res.end();
           },
     );
     servers.push(server);
-    httpPort = await listen(server);
+    httpPort = await listen(server, opts.ports?.http);
   }
 
   return {
-    ctx: fixtureContext({ httpsPort, httpPort, ca: ca.cert }),
+    ctx: fixtureContext({ httpsPort, httpPort, ca: ca.cert, hostname }),
+    ca: ca.cert,
     requests,
     close: async () => {
       await Promise.all(
