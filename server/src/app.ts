@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { toNodeHandler } from 'better-auth/node';
 import express, { type ErrorRequestHandler } from 'express';
 import helmet from 'helmet';
@@ -11,7 +12,12 @@ import { meRouter } from './routes/me.ts';
 import { scanRouter } from './routes/scan.ts';
 import { scansRouter } from './routes/scans.ts';
 
-export function createApp() {
+export type AppOptions = {
+  /** Folder of the built website (client/dist) to serve next to the API, on the same port. */
+  website?: string;
+};
+
+export function createApp({ website }: AppOptions = {}) {
   const app = express();
 
   app.disable('x-powered-by');
@@ -55,8 +61,9 @@ export function createApp() {
         `${req.method} ${(req as express.Request).originalUrl} → ${res.statusCode} (${Math.round(ms)} ms)`,
       customErrorMessage: (req, res, err) =>
         `${req.method} ${(req as express.Request).originalUrl} → ${res.statusCode} failed: ${err.message}`,
-      // The status badge polls /api/health every few seconds; don't fill the log with it.
-      autoLogging: { ignore: (req) => req.url === '/api/health' },
+      // Only API calls: not the status badge polling /api/health every few seconds, and not the
+      // website's own files.
+      autoLogging: { ignore: (req) => req.url === '/api/health' || !req.url?.startsWith('/api') },
     }),
   );
 
@@ -95,14 +102,14 @@ export function createApp() {
     res.status(404).json({ error: 'Not found' });
   });
 
+  if (website) serveWebsite(app, website);
+
   const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
-    // Unreadable or oversized request bodies are the caller's mistake, not a crash.
-    if (err?.type === 'entity.parse.failed') {
-      res.status(400).json({ error: 'That request wasn’t valid.' });
-      return;
-    }
-    if (err?.type === 'entity.too.large') {
-      res.status(413).json({ error: 'That request was too large.' });
+    // The caller's mistakes (unreadable or oversized body, a website file that doesn't exist)
+    // aren't crashes: answer with their own status and a plain message.
+    if (typeof err?.status === 'number' && err.status >= 400 && err.status < 500) {
+      const message = { 404: 'Not found', 413: 'That request was too large.' }[err.status as number];
+      res.status(err.status).json({ error: message ?? 'That request wasn’t valid.' });
       return;
     }
     req.log.error({ err }, 'Unhandled error');
@@ -111,4 +118,23 @@ export function createApp() {
   app.use(errorHandler);
 
   return app;
+}
+
+/**
+ * The built website. Vite gives every file in assets/ a name that changes with its content, so
+ * browsers may keep those for a year; index.html is always re-checked so a new build shows at once.
+ * Every other address (/home, /websites/…) gets index.html too, and the website's own router
+ * takes it from there.
+ */
+function serveWebsite(app: express.Express, folder: string) {
+  // dotfiles: 'allow' only so it also works from a folder whose path has a dot-folder in it.
+  app.use(
+    '/assets',
+    express.static(path.join(folder, 'assets'), { immutable: true, maxAge: '1y', dotfiles: 'allow', fallthrough: false }),
+  );
+  app.use(express.static(folder, { index: false, maxAge: '1h', dotfiles: 'allow' }));
+  app.get('/{*page}', (_req, res) => {
+    res.set('cache-control', 'no-cache');
+    res.sendFile(path.join(folder, 'index.html'), { dotfiles: 'allow' });
+  });
 }

@@ -1,4 +1,6 @@
 * text=auto eol=lf
+# Windows double-click files need Windows line endings.
+*.cmd text eol=crlf
 *.png binary
 *.jpg binary
 *.ico binary

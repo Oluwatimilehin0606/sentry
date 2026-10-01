@@ -129,10 +129,29 @@ Sentry needs PostgreSQL 18 running locally.
 | `npm run lint` | Checks code style |
 | `npm run typecheck` | Type-checks client and server |
 | `npm run build` | Builds the web app for production |
+| `npm start` | Runs Sentry the production way on http://localhost:3000 (website and API on one port, `sentry_demo` database; build first) |
+| `npm run demo` | `npm start` plus the pretend website bakery.test, and opens the browser (what **Start Sentry demo.cmd** runs) |
 | `npm run db:create` | Creates the dev and test databases (safe to re-run) |
 | `npm run db:generate` | Generates a migration from schema changes |
 | `npm run db:migrate` | Applies migrations to the dev database |
 | `npm run db:studio` | Opens Drizzle Studio to browse the data |
+
+### Running the demo (production build, one port)
+
+On Windows, double-click **Start Sentry demo.cmd** in the project folder. It builds the website (about 30 seconds), starts Sentry on **http://localhost:3000** together with the pretend website bakery.test, and opens the browser. Close its window to stop everything.
+
+The same by hand, on any system:
+
+```bash
+npm run build
+npm start          # Sentry alone
+npm run demo       # Sentry plus bakery.test, and opens the browser
+```
+
+- Needs the one-time database setup above (the `sentry` user and `.env`). `npm start` creates the `sentry_demo` database and brings it up to date by itself, so demo accounts never mix with your development data.
+- It runs with `NODE_ENV=production`: the API serves the built website itself, with Sentry's full security headers, and automatic checks run every minute.
+- Settings come from `.env`. For anything the demo should do differently, create `.env.demo` (never committed) with just those lines, e.g. the real email service for alert emails (`SMTP_URL`, `MAIL_FROM`) or another port (`API_PORT`). Development keeps using `.env` alone.
+- bakery.test only works while Sentry runs on this machine (`APP_URL` is localhost); the pretend-website switch refuses to start once Sentry is online.
 
 ### Project layout
 

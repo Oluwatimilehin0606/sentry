@@ -5,18 +5,19 @@ import path from 'node:path';
 const fromProject = (file: string) => path.resolve(import.meta.dirname, '../..', file);
 
 /**
- * End-to-end test mode (browser tests only). When SENTRY_E2E_SITES is set, the listed pretend
- * websites (served on this machine by e2e/fixture-site.ts) can be checked, and their DNS TXT
- * records are read from SENTRY_E2E_TXT_FILE instead of real DNS. Every other website still goes
- * through the real SSRF guard and real DNS. It refuses to switch on in production.
+ * Pretend websites, for the browser test and the live demo. When SENTRY_E2E_SITES is set, the
+ * listed pretend websites (served on this machine by e2e/fixture-site.ts) can be checked, and their
+ * DNS TXT records are read from SENTRY_E2E_TXT_FILE instead of real DNS. Every other website still
+ * goes through the real SSRF guard and real DNS. In production it only switches on while Sentry
+ * itself runs on this machine (the demo); never once it's online.
  */
 type E2eSite = { https: number; http: number; caFile: string };
 
 function load(): Record<string, E2eSite> | null {
   const raw = process.env.SENTRY_E2E_SITES;
   if (!raw) return null;
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('SENTRY_E2E_SITES is for browser tests only and must not be set in production.');
+  if (process.env.NODE_ENV === 'production' && !runsOnThisMachine(process.env.APP_URL)) {
+    throw new Error('SENTRY_E2E_SITES is for this machine only and must not be set once Sentry is online.');
   }
   const parsed = JSON.parse(raw) as Record<string, E2eSite>;
   // Only made-up names (.test can never exist on the internet), so a real website can't be redirected.
@@ -25,6 +26,14 @@ function load(): Record<string, E2eSite> | null {
     throw new Error(`SENTRY_E2E_SITES may only list .test names, not ${real.join(', ')}.`);
   }
   return parsed;
+}
+
+function runsOnThisMachine(appUrl: string | undefined): boolean {
+  try {
+    return ['localhost', '127.0.0.1', '[::1]'].includes(new URL(appUrl ?? '').hostname);
+  } catch {
+    return false;
+  }
 }
 
 const sites = load();

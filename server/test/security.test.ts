@@ -73,11 +73,15 @@ describe('browser-test switches', () => {
   }
   const SITES = JSON.stringify({ 'bakery.test': { https: 8443, http: 8081, caFile: 'e2e/.tmp/ca.pem' } });
 
-  it('refuse to switch on in production', () => {
-    const { code, stderr } = load({ NODE_ENV: 'production', SENTRY_E2E_SITES: SITES });
+  it('refuse to switch on once Sentry is online', () => {
+    const { code, stderr } = load({ NODE_ENV: 'production', APP_URL: 'https://sentry.example', SENTRY_E2E_SITES: SITES });
 
     expect(code).not.toBe(0);
-    expect(stderr).toContain('must not be set in production');
+    expect(stderr).toContain('must not be set once Sentry is online');
+  });
+
+  it('switch on for the demo build on this machine', () => {
+    expect(load({ NODE_ENV: 'production', APP_URL: 'http://localhost:3000', SENTRY_E2E_SITES: SITES }).code).toBe(0);
   });
 
   it('only accept made-up .test names', () => {

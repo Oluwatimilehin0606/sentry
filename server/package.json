@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch --env-file-if-exists=../.env src/index.ts",
-    "start": "node --env-file-if-exists=../.env src/index.ts",
+    "start": "node scripts/start.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "scan": "node scripts/scan.ts",
