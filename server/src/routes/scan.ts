@@ -9,6 +9,11 @@ import { requireAuth } from '../middleware/require-auth.ts';
 import { normalizeHostname } from '../scanner/domain.ts';
 import { scanHost, type ScanMode, type ScanProgress } from '../scanner/scan.ts';
 import { ScanTargetError } from '../scanner/target.ts';
+import { countScansSince, saveScan } from '../scans/store.ts';
+
+/** Checks per account per 24 hours (light and full together). */
+export const DAILY_LIMIT = 50;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const scanRouter = Router();
 
@@ -49,7 +54,12 @@ scanRouter.post('/', async (req, res, next) => {
     res.status(400).json({ error: 'Enter a valid domain, like yourbakery.com.' });
     return;
   }
-  const mode = await modeFor(res.locals.user!.id, hostname);
+  const userId = res.locals.user!.id;
+  if ((await countScansSince(userId, new Date(Date.now() - DAY_MS))) >= DAILY_LIMIT) {
+    res.status(429).json({ error: `You’ve run ${DAILY_LIMIT} checks in the last 24 hours. Please try again tomorrow.` });
+    return;
+  }
+  const mode = await modeFor(userId, hostname);
 
   // The home page asks for live progress: one JSON object per line as each part of the scan
   // finishes, then the report (or an error). Other callers get the plain JSON report.
@@ -70,7 +80,8 @@ scanRouter.post('/', async (req, res, next) => {
         (progress: ScanProgress) => send({ type: 'progress', ...progress }),
         mode,
       );
-      send({ type: 'report', report });
+      const id = await saveScan(userId, report);
+      send({ type: 'report', report: { id, ...report } });
     } catch (err) {
       if (err instanceof ScanTargetError) {
         send({ type: 'error', error: err.message, code: err.code });
@@ -84,7 +95,9 @@ scanRouter.post('/', async (req, res, next) => {
   }
 
   try {
-    res.json(await scanHost(hostname, undefined, undefined, mode));
+    const report = await scanHost(hostname, undefined, undefined, mode);
+    const id = await saveScan(userId, report);
+    res.json({ id, ...report });
   } catch (err) {
     if (err instanceof ScanTargetError) {
       res.status(STATUS_FOR[err.code]).json({ error: err.message, code: err.code });

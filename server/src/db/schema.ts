@@ -112,23 +112,38 @@ export const domains = pgTable(
   (t) => [uniqueIndex('domains_user_hostname_uq').on(t.userId, t.hostname)],
 );
 
+export const scanMode = pgEnum('scan_mode', ['full', 'light']);
+
+/**
+ * One check of one website by one account. Light checks can be of any website, so a scan
+ * belongs to its user and hostname; domainId links it to the account's website when there is one.
+ */
 export const scans = pgTable(
   'scans',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    domainId: uuid('domain_id')
+    userId: text('user_id')
       .notNull()
-      .references(() => domains.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
+    hostname: text('hostname').notNull(),
+    domainId: uuid('domain_id').references(() => domains.id, { onDelete: 'set null' }),
+    mode: scanMode('mode').notNull(),
     status: scanStatus('status').notNull().default('queued'),
     trigger: scanTrigger('trigger').notNull().default('manual'),
     score: integer('score'),
     grade: text('grade'),
+    finalUrl: text('final_url'),
+    durationMs: integer('duration_ms'),
     error: text('error'),
     startedAt: timestamp('started_at', { withTimezone: true }),
     finishedAt: timestamp('finished_at', { withTimezone: true }),
     createdAt: createdAt(),
   },
-  (t) => [index('scans_domain_created_idx').on(t.domainId, t.createdAt)],
+  (t) => [
+    index('scans_domain_created_idx').on(t.domainId, t.createdAt),
+    index('scans_user_created_idx').on(t.userId, t.createdAt),
+    index('scans_user_hostname_created_idx').on(t.userId, t.hostname, t.createdAt),
+  ],
 );
 
 export const findings = pgTable(

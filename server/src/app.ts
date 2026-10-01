@@ -8,6 +8,7 @@ import { domainsRouter } from './routes/domains.ts';
 import { healthRouter } from './routes/health.ts';
 import { meRouter } from './routes/me.ts';
 import { scanRouter } from './routes/scan.ts';
+import { scansRouter } from './routes/scans.ts';
 
 export function createApp() {
   const app = express();
@@ -42,6 +43,7 @@ export function createApp() {
   app.use('/api/me', meRouter);
   app.use('/api/domains', domainsRouter);
   app.use('/api/scan', scanRouter);
+  app.use('/api/scans', scansRouter);
 
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });

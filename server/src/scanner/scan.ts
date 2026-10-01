@@ -1,4 +1,4 @@
-import { CATALOG, type CatalogEntry } from './catalog.ts';
+import { CATALOG, type CatalogEntry, type CheckId } from './catalog.ts';
 import {
   evaluateCertificate,
   evaluateHeaders,
@@ -26,6 +26,7 @@ export type OnProgress = (progress: ScanProgress) => void;
  */
 export type ScanMode = 'full' | 'light';
 const SEVERITY_RANK = { critical: 0, medium: 1, low: 2 } as const;
+const CHECK_ORDER = Object.keys(CATALOG) as CheckId[];
 
 /** Only follow redirects that stay on the same site (e.g. example.com → www.example.com/en). */
 function isSameSite(target: URL, hostname: string): boolean {
@@ -163,9 +164,39 @@ async function runScan(hostname: string, ctx: ScanContext, onProgress: OnProgres
   if (legacy) findings.push(legacy);
   findings.push(...paths);
 
-  const { score, grade, summary } = scoreFindings(findings);
+  return buildReport({
+    hostname,
+    mode,
+    finalUrl,
+    scannedAt: new Date().toISOString(),
+    durationMs: Date.now() - started,
+    findings,
+  });
+}
 
-  const detailed = findings
+/**
+ * Turns raw results into the report people read: score, grade, summary, and each finding with
+ * its plain-English copy, most severe first. Saved reports are rebuilt with this too, so they
+ * always use the latest wording.
+ */
+export function buildReport(input: {
+  hostname: string;
+  mode: ScanMode;
+  finalUrl?: string;
+  scannedAt: string;
+  durationMs: number;
+  findings: Finding[];
+}) {
+  // One fixed order (most severe first, then catalog order), so a saved report reads exactly like
+  // the live one, including which issue the summary says to start with.
+  const ordered = [...input.findings].sort(
+    (a, b) =>
+      SEVERITY_RANK[CATALOG[a.checkId].severity] - SEVERITY_RANK[CATALOG[b.checkId].severity] ||
+      CHECK_ORDER.indexOf(a.checkId) - CHECK_ORDER.indexOf(b.checkId),
+  );
+  const { score, grade, summary } = scoreFindings(ordered);
+
+  const detailed = ordered
     .map((f) => {
       const entry: CatalogEntry = CATALOG[f.checkId];
       return {
@@ -179,15 +210,14 @@ async function runScan(hostname: string, ctx: ScanContext, onProgress: OnProgres
         forDeveloper: entry.forDeveloper,
         evidence: f.evidence,
       };
-    })
-    .sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
+    });
 
   return {
-    hostname,
-    mode,
-    finalUrl,
-    scannedAt: new Date().toISOString(),
-    durationMs: Date.now() - started,
+    hostname: input.hostname,
+    mode: input.mode,
+    finalUrl: input.finalUrl,
+    scannedAt: input.scannedAt,
+    durationMs: input.durationMs,
     score,
     grade,
     summary,
@@ -195,4 +225,4 @@ async function runScan(hostname: string, ctx: ScanContext, onProgress: OnProgres
   };
 }
 
-export type ScanReport = Awaited<ReturnType<typeof runScan>>;
+export type ScanReport = ReturnType<typeof buildReport>;
