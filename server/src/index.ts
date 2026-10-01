@@ -28,6 +28,9 @@ if (!production) {
     root: client,
     configFile: path.join(client, 'vite.config.ts'),
     appType: 'spa',
+    // Load vite.config.ts without writing a temporary copy: node --watch saw those copies
+    // come and go and restarted the server over and over.
+    configLoader: 'runner',
     server: { middlewareMode: true, hmr: { server } },
   });
   app.use(vite.middlewares);
