@@ -1,6 +1,7 @@
-// `npm run db:seed`: fills the demo database (sentry_demo, the one `npm start` uses) with a demo
-// account and websites that already have weeks of checks, so the charts and lists look lived-in.
-// Every run starts from empty, so it's safe to run before each rehearsal and on the day.
+// `npm run db:seed`: adds the demo account, with websites that already have weeks of checks, so
+// the charts and lists look lived-in. Every run replaces the demo account (and only that account)
+// with a fresh one, so it's safe to run before each rehearsal and on the day. Other accounts in the
+// database are left alone.
 //
 // The account's email and password come from .env.demo (DEMO_EMAIL, DEMO_PASSWORD). Use the
 // address the email service can deliver to, so alert emails arrive. Without a password, one is
@@ -18,15 +19,9 @@ import { ROOT, envFile, useDemoSettings } from './lib/demo-env.ts';
 
 useDemoSettings();
 const databaseUrl = process.env.DATABASE_URL!;
-const databaseName = new URL(databaseUrl).pathname.slice(1);
-// It empties the database first, so never anything but a demo one.
-if (!databaseName.endsWith('_demo')) {
-  console.error(`✗ Refusing to seed ${databaseName}: only a database whose name ends in _demo.`);
-  process.exit(1);
-}
 
 try {
-  await ensureDatabases(databaseUrl, [databaseName]);
+  await ensureDatabases(databaseUrl, [new URL(databaseUrl).pathname.slice(1)]);
   await migrateDatabase(databaseUrl);
 } catch (err) {
   console.error(`✗ ${explainDatabaseError(err)}`);
@@ -54,9 +49,9 @@ if (!password) {
 
 // Only now load the app's code, so it connects to the demo database.
 const load = <T>(file: string): Promise<T> => import(pathToFileURL(path.join(ROOT, 'server/src', file)).href);
-const { sql } = await import('drizzle-orm');
+const { eq } = await import('drizzle-orm');
 const { db, pool } = await load<typeof import('../src/db/client.ts')>('db/client.ts');
-const { domains } = await load<typeof import('../src/db/schema.ts')>('db/schema.ts');
+const { domains, user } = await load<typeof import('../src/db/schema.ts')>('db/schema.ts');
 const { auth } = await load<typeof import('../src/auth.ts')>('auth.ts');
 const { newVerifyToken } = await load<typeof import('../src/domains/verify.ts')>('domains/verify.ts');
 const { buildReport } = await load<typeof import('../src/scanner/scan.ts')>('scanner/scan.ts');
@@ -150,7 +145,8 @@ const SITES: Site[] = [
 const ALL_CHECKS = Object.keys(CATALOG) as CheckId[];
 
 try {
-  await db.execute(sql`truncate table "user" cascade`);
+  // A fresh demo account each time (its websites and checks go with it); nobody else's is touched.
+  await db.delete(user).where(eq(user.email, email));
 
   const signUp = await auth.api.signUpEmail({
     body: { name: 'Adunni', email, password, acceptTerms: true } as { name: string; email: string; password: string },

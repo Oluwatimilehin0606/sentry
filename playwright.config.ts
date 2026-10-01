@@ -2,8 +2,8 @@ import path from 'node:path';
 import { defineConfig } from '@playwright/test';
 
 /**
- * Browser test of the whole journey, on its own ports and the *test* database:
- * a pretend website (e2e/fixture-site.ts), the API in end-to-end mode, and the web app.
+ * Browser test of the whole journey, on its own port and the *test* database: a pretend website
+ * (e2e/fixture-site.ts) and Sentry itself (website and API together) in end-to-end mode.
  * Run with `npm run test:e2e`. It uses the Chrome installed on this machine.
  */
 try {
@@ -23,9 +23,8 @@ function testDatabaseUrl(): string {
 }
 
 const TMP = path.resolve(import.meta.dirname, 'e2e/.tmp');
-const API_PORT = 4100;
-const APP_PORT = 5174;
-const APP_URL = `http://localhost:${APP_PORT}`;
+// Not 5173, so it can run while Sentry itself is running.
+const APP_URL = 'http://localhost:5174';
 process.env.E2E_DATABASE_URL = testDatabaseUrl();
 /** Servers get this machine's environment (PATH, secrets from .env) plus their own settings. */
 const inherited = Object.fromEntries(Object.entries(process.env).filter(([, v]) => v !== undefined)) as Record<string, string>;
@@ -52,23 +51,16 @@ export default defineConfig({
     },
     {
       command: 'node server/src/index.ts',
-      url: `http://localhost:${API_PORT}/api/health`,
+      url: `${APP_URL}/api/health`,
       reuseExistingServer: false,
       env: {
         ...inherited,
         NODE_ENV: 'test',
-        API_PORT: String(API_PORT),
         APP_URL,
         DATABASE_URL: process.env.E2E_DATABASE_URL,
         SENTRY_E2E_SITES: JSON.stringify({ 'bakery.test': { https: 8443, http: 8081, caFile: path.join(TMP, 'ca.pem') } }),
         SENTRY_E2E_TXT_FILE: path.join(TMP, 'txt.json'),
       },
-    },
-    {
-      command: `npm run dev -w client -- --port ${APP_PORT} --strictPort`,
-      url: APP_URL,
-      reuseExistingServer: false,
-      env: { ...inherited, API_PORT: String(API_PORT) },
     },
   ],
 });

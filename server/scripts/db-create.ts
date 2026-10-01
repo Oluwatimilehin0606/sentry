@@ -1,6 +1,5 @@
 // Creates the dev and test databases named by DATABASE_URL (and <name>_test / sentry_test).
 // Safe to run repeatedly. Needs a Postgres role with CREATEDB; see README "Database setup".
-// (The demo database, sentry_demo, is created by `npm start` itself.)
 import { ensureDatabases, explainDatabaseError } from './lib/database.ts';
 
 const raw = process.env.DATABASE_URL;

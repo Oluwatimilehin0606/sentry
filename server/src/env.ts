@@ -2,8 +2,7 @@ import { z } from 'zod';
 
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  // Not `PORT`: dev tools often set PORT for the web app, which would clash.
-  API_PORT: z.coerce.number().int().positive().default(4000),
+  // Where Sentry runs: the website and API together, on this address's port.
   APP_URL: z.string().url().default('http://localhost:5173'),
   DATABASE_URL: z
     .string({ error: 'is not set. Copy .env.example to .env and fill it in.' })

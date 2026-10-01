@@ -15,9 +15,14 @@ import { scansRouter } from './routes/scans.ts';
 export type AppOptions = {
   /** Folder of the built website (client/dist) to serve next to the API, on the same port. */
   website?: string;
+  /**
+   * Sentry's Content-Security-Policy (default on). Off only while Vite serves the website during
+   * development: its live reload needs inline scripts and a websocket.
+   */
+  csp?: boolean;
 };
 
-export function createApp({ website }: AppOptions = {}) {
+export function createApp({ website, csp = true }: AppOptions = {}) {
   const app = express();
 
   app.disable('x-powered-by');
@@ -27,7 +32,7 @@ export function createApp({ website }: AppOptions = {}) {
   const https = env.APP_URL.startsWith('https://');
   app.use(
     helmet({
-      contentSecurityPolicy: {
+      contentSecurityPolicy: csp && {
         directives: {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'"],

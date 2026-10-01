@@ -14,10 +14,4 @@ export default defineConfig({
     // The repo is public, so shipping source maps exposes nothing new and makes errors traceable.
     sourcemap: true,
   },
-  server: {
-    port: 5173,
-    proxy: {
-      '/api': `http://localhost:${process.env.API_PORT ?? 4000}`,
-    },
-  },
 });

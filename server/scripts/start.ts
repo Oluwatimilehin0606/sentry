@@ -1,6 +1,6 @@
-// `npm start`: runs Sentry on this machine the production way. The API serves the built website
-// on one port (http://localhost:3000), using its own database, sentry_demo, so demo accounts
-// never mix with development data. The database is created and brought up to date on the way.
+// `npm start`: runs Sentry on this machine the production way, serving the built website. Same
+// address (http://localhost:5173) and database as `npm run dev`, so the same accounts work on
+// both; only one of the two can run at a time. The database is brought up to date on the way.
 //
 // Settings come from .env, then the demo defaults, then .env.demo (optional, never committed)
 // for anything the demo should do differently, e.g. send real alert emails.

@@ -1,5 +1,5 @@
 @echo off
-rem Double-click to run the Sentry demo: Sentry on http://localhost:3000 plus the pretend
+rem Double-click to run the Sentry demo: Sentry on http://localhost:5173 plus the pretend
 rem website bakery.test. The browser opens by itself. Close this window to stop everything.
 title Sentry demo (close this window to stop)
 cd /d "%~dp0"

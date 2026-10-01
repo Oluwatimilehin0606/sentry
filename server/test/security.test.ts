@@ -81,7 +81,7 @@ describe('browser-test switches', () => {
   });
 
   it('switch on for the demo build on this machine', () => {
-    expect(load({ NODE_ENV: 'production', APP_URL: 'http://localhost:3000', SENTRY_E2E_SITES: SITES }).code).toBe(0);
+    expect(load({ NODE_ENV: 'production', APP_URL: 'http://localhost:5173', SENTRY_E2E_SITES: SITES }).code).toBe(0);
   });
 
   it('only accept made-up .test names', () => {
