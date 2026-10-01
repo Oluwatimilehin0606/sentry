@@ -22,6 +22,14 @@ describe('SSRF guard', () => {
     'fd00::1',
     'fe80::1',
     '::ffff:127.0.0.1',
+    '::ffff:7f00:1',
+    '::127.0.0.1',
+    '64:ff9b::a00:1',
+    '2002:7f00:1::1',
+    '2001:0:4136:e378:8000:63bf:3fff:fdd2',
+    'fec0::1',
+    '100::1',
+    '192.88.99.1',
   ])('blocks %s', (address) => {
     expect(isBlockedAddress(address)).toBe(true);
   });

@@ -18,7 +18,13 @@ function load(): Record<string, E2eSite> | null {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('SENTRY_E2E_SITES is for browser tests only and must not be set in production.');
   }
-  return JSON.parse(raw) as Record<string, E2eSite>;
+  const parsed = JSON.parse(raw) as Record<string, E2eSite>;
+  // Only made-up names (.test can never exist on the internet), so a real website can't be redirected.
+  const real = Object.keys(parsed).filter((hostname) => !hostname.endsWith('.test'));
+  if (real.length > 0) {
+    throw new Error(`SENTRY_E2E_SITES may only list .test names, not ${real.join(', ')}.`);
+  }
+  return parsed;
 }
 
 const sites = load();

@@ -22,17 +22,8 @@
     <meta name="twitter:card" content="summary" />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!-- Apply the saved theme before first paint so dark mode doesn't flash light. -->
-    <!-- "js-motion" switches on entrance animations; without it (no JS, or reduce-motion) everything shows as-is. -->
-    <script>
-      try {
-        var t = localStorage.getItem('sentry-theme');
-        if (t === 'dark' || ((t === null || t === 'system') && matchMedia('(prefers-color-scheme: dark)').matches))
-          document.documentElement.classList.add('dark');
-        if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window)
-          document.documentElement.classList.add('js-motion');
-      } catch (e) {}
-    </script>
+    <!-- Applies the saved theme before first paint (see the file for why it isn't inline). -->
+    <script src="/theme-init.js"></script>
     <title>Sentry: plain-English security check-ups for small businesses</title>
   </head>
   <body>

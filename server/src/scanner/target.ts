@@ -16,6 +16,7 @@ const BLOCKED_V4: [string, number][] = [
   ['172.16.0.0', 12], // private
   ['192.0.0.0', 24], // IETF protocol assignments
   ['192.0.2.0', 24], // documentation
+  ['192.88.99.0', 24], // old 6to4 relays
   ['192.168.0.0', 16], // private
   ['198.18.0.0', 15], // benchmarking
   ['198.51.100.0', 24], // documentation
@@ -24,13 +25,17 @@ const BLOCKED_V4: [string, number][] = [
   ['240.0.0.0', 4], // reserved + broadcast
 ];
 
+// IPv6 is allow-listed instead: only global addresses (2000::/3) are public. That rules out
+// loopback, unique-local, link-local, multicast, IPv4-compatible (::a.b.c.d) and NAT64
+// (64:ff9b::/96, which reaches IPv4 addresses, private ones included) in one go.
+const globalV6 = new BlockList();
+globalV6.addSubnet('2000::', 3, 'ipv6');
+
+// Inside 2000::/3, these carry an IPv4 address or aren't real destinations.
 const BLOCKED_V6: [string, number][] = [
-  ['::', 128], // unspecified
-  ['::1', 128], // loopback
-  ['fc00::', 7], // unique local
-  ['fe80::', 10], // link-local
-  ['ff00::', 8], // multicast
+  ['2001::', 32], // Teredo tunnels
   ['2001:db8::', 32], // documentation
+  ['2002::', 16], // 6to4 (2002:7f00:1:: is 127.0.0.1)
 ];
 
 for (const [net, prefix] of BLOCKED_V4) blocked.addSubnet(net, prefix, 'ipv4');
@@ -43,6 +48,7 @@ export function isBlockedAddress(address: string): boolean {
   // (A ::ffff:0:0/96 rule can't be used: BlockList would then match every IPv4 address.)
   const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(address)?.[1];
   if (mapped) return isBlockedAddress(mapped);
+  if (family === 6 && !globalV6.check(address, 'ipv6')) return true;
   return blocked.check(address, family === 4 ? 'ipv4' : 'ipv6');
 }
 

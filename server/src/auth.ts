@@ -5,6 +5,9 @@ import { db } from './db/client.ts';
 import { account, session, user, verification } from './db/schema.ts';
 import { env } from './env.ts';
 
+/** Set by the app from the connection itself (see app.ts); never taken from the client. */
+export const CLIENT_IP_HEADER = 'x-sentry-client-ip';
+
 export const auth = betterAuth({
   appName: 'Sentry',
   // Browsers reach the API through the web app's origin (Vite proxies /api in dev).
@@ -30,6 +33,9 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // refresh the expiry at most once a day
+  },
+  advanced: {
+    ipAddress: { ipAddressHeaders: [CLIENT_IP_HEADER] },
   },
   rateLimit: {
     enabled: env.NODE_ENV !== 'test',
