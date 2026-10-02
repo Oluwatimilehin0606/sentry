@@ -7,17 +7,28 @@
 // address the email service can deliver to, so alert emails arrive. Without a password, one is
 // made up and saved to .env.demo (never printed).
 //
-// The websites: bakery.test (the pretend website, which scores an F live: an A for weeks, then
-// "something broke"), two made-up .example businesses with history, and one still to be proven.
+// The websites: the live demo website (an A for weeks, so a live check shows "A → F"; bakery.test
+// on this machine, DEMO_SITE_HOST online), two made-up .example businesses with history, and one
+// still to be proven.
+//
+//   --online  fill online Sentry's database instead: settings from .env.online (never committed),
+//             which holds the online DATABASE_URL, DEMO_SITE_HOST and the demo sign-in.
 // .example names can never exist on the internet, so nothing real ever gets checked.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ensureDatabases, explainDatabaseError, migrateDatabase } from './lib/database.ts';
+import { parseArgs } from 'node:util';
 import { ROOT, envFile, useDemoSettings } from './lib/demo-env.ts';
 
-useDemoSettings();
+const { values: flags } = parseArgs({ options: { online: { type: 'boolean' } } });
+const SETTINGS = flags.online ? '.env.online' : '.env.demo';
+if (flags.online && !fs.existsSync(path.join(ROOT, SETTINGS))) {
+  console.error('✗ Create .env.online first (see README "Putting Sentry online").');
+  process.exit(1);
+}
+useDemoSettings({ settings: SETTINGS });
 const databaseUrl = process.env.DATABASE_URL!;
 
 try {
@@ -29,12 +40,12 @@ try {
 }
 
 // The demo account's sign-in, from .env.demo (made up and saved there if missing).
-const demoEnv = envFile('.env.demo');
+const demoEnv = envFile(SETTINGS);
 const email = demoEnv.DEMO_EMAIL ?? 'demo@example.com';
 let password = demoEnv.DEMO_PASSWORD;
 if (!password) {
   password = crypto.randomBytes(12).toString('base64url');
-  const file = path.join(ROOT, '.env.demo');
+  const file = path.join(ROOT, SETTINGS);
   const before = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
   const lines = [
     ...(before && !before.endsWith('\n') ? [''] : []),
@@ -44,7 +55,7 @@ if (!password) {
     '',
   ];
   fs.writeFileSync(file, before + lines.join('\n'));
-  console.log('✓ made up a password for the demo account and saved it in .env.demo');
+  console.log(`✓ made up a password for the demo account and saved it in ${SETTINGS}`);
 }
 
 // Only now load the app's code, so it connects to the demo database.
@@ -53,7 +64,7 @@ const { eq } = await import('drizzle-orm');
 const { db, pool } = await load<typeof import('../src/db/client.ts')>('db/client.ts');
 const { domains, user } = await load<typeof import('../src/db/schema.ts')>('db/schema.ts');
 const { auth } = await load<typeof import('../src/auth.ts')>('auth.ts');
-const { newVerifyToken } = await load<typeof import('../src/domains/verify.ts')>('domains/verify.ts');
+const { hasVerifyRecord, newVerifyToken, TXT_PREFIX } = await load<typeof import('../src/domains/verify.ts')>('domains/verify.ts');
 const { buildReport } = await load<typeof import('../src/scanner/scan.ts')>('scanner/scan.ts');
 const { saveScan } = await load<typeof import('../src/scans/store.ts')>('scans/store.ts');
 const { CATALOG } = await load<typeof import('../src/scanner/catalog.ts')>('scanner/catalog.ts');
@@ -78,14 +89,48 @@ type Site = {
   checks: Check[];
 };
 
+const DEMO_SITE = process.env.DEMO_SITE_HOST || 'bakery.test';
+
+/** The main domain above a hostname: demo.yourdomain.com.ng → yourdomain.com.ng. */
+function mainDomain(hostname: string): string {
+  const parts = hostname.split('.');
+  const twoLevel = parts.length >= 3 && /^(com|co|org|net|gov|edu|ac|sch|name|mil)$/.test(parts.at(-2)!);
+  return parts.slice(-(twoLevel ? 3 : 2)).join('.');
+}
+
+// Online, the demo website is verified only if its proof really is in DNS. It goes on the main
+// domain: demo.<domain> points to the host with a CNAME record, which can't share its name with a
+// TXT record, and proving the main domain covers its subdomains. The proof value is kept in
+// .env.online, so seeding again never changes the record to add.
+let demoVerified = true;
+let demoToken = newVerifyToken();
+if (flags.online) {
+  demoToken = demoEnv.DEMO_VERIFY_TOKEN ?? demoToken;
+  if (!demoEnv.DEMO_VERIFY_TOKEN) {
+    fs.appendFileSync(path.join(ROOT, SETTINGS), `DEMO_VERIFY_TOKEN=${demoToken}
+`);
+  }
+  const main = mainDomain(DEMO_SITE);
+  demoVerified = (await hasVerifyRecord(main, demoToken)).found;
+  if (!demoVerified) {
+    console.log(
+      `! ${DEMO_SITE} isn't proven yet. In Cloudflare, add a TXT record to ${main}:
+` +
+        `    Name: @    Content: ${TXT_PREFIX}${demoToken}
+` +
+        '  then run this again (records can take a few minutes to show).',
+    );
+  }
+}
+
 const SITES: Site[] = [
   {
     // An A for weeks; live on the day it scores an F (missing protections, a public .env file).
-    hostname: 'bakery.test',
+    hostname: DEMO_SITE,
     addedDaysAgo: 34,
-    verified: true,
+    verified: demoVerified,
     rescanInterval: 'weekly',
-    nextCheckInDays: 2,
+    nextCheckInDays: 6,
     checks: [
       { daysAgo: 33, failing: ['header.csp_missing', 'header.xfo_missing', 'header.xcto_missing'], trigger: 'manual', minute: 12 },
       { daysAgo: 26, failing: ['header.csp_missing', 'header.xcto_missing'], minute: 14 },
@@ -152,13 +197,13 @@ try {
     body: { name: 'Adunni', email, password, acceptTerms: true } as { name: string; email: string; password: string },
   });
   const userId = signUp.user.id;
-  console.log(`✓ demo account: ${email} (password in .env.demo)`);
+  console.log(`✓ demo account: ${email} (password in ${SETTINGS})`);
 
   for (const site of SITES) {
     await db.insert(domains).values({
       userId,
       hostname: site.hostname,
-      verifyToken: newVerifyToken(),
+      verifyToken: site.hostname === DEMO_SITE ? demoToken : newVerifyToken(),
       verifiedAt: site.verified ? daysAgo(site.addedDaysAgo, 9, 50) : null,
       createdAt: daysAgo(site.addedDaysAgo, 9, 45),
       rescanInterval: site.rescanInterval,

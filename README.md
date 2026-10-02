@@ -156,6 +156,25 @@ npm run demo       # Sentry plus bakery.test, and opens the browser
 - `npm run db:seed` fills the demo database with an account and websites that already have weeks of checks: bakery.test (an A for five weeks, so checking it live shows "A → F, 7 new"), two made-up `.example` businesses, and one website still waiting to be proven. Each run replaces the demo account with a fresh one (other accounts are left alone), so run it before each rehearsal. Put `DEMO_EMAIL=` (the address alert emails should reach) in `.env.demo` first; the password is made up and saved there as `DEMO_PASSWORD` if you don't set one.
 - bakery.test only works while Sentry runs on this machine (`APP_URL` is localhost); the pretend-website switch refuses to start once Sentry is online.
 
+### Putting Sentry online
+
+Everything runs on free plans: **Render** runs Sentry (website and API together), **Neon** holds the database, **Resend** sends alert emails, and **Cloudflare** manages the domain's records. Only the domain itself costs money. Sign up for Render, Neon and Cloudflare with Sentry's own email account, not a personal one.
+
+1. **Database (Neon):** create a project (region: Europe, e.g. Frankfurt) and copy its connection string (`postgres://…?sslmode=require`).
+2. **Domain records (Cloudflare):** add the domain to Cloudflare (free plan) and change the domain's nameservers at the registrar to the two Cloudflare gives you.
+3. **Sentry (Render):** New → **Blueprint** → choose this repository. Render reads `render.yaml` and asks for:
+   - `APP_URL`: `https://sentry.<your domain>`
+   - `DATABASE_URL`: the Neon connection string
+   - `SMTP_URL`: `smtps://resend:<Resend API key>@smtp.resend.com:2465` (port 2465: Render's free plan blocks the usual email ports)
+   - `MAIL_FROM`: `Sentry <alerts@<your domain>>` once the domain is verified in Resend (until then, `Sentry <onboarding@resend.dev>`, which only reaches the Resend account's own address)
+   - `DEMO_SITE_HOST`: `demo.<your domain>`, the deliberately weak website for the demo, served by Sentry itself
+4. **Addresses:** in Render, add both `sentry.<your domain>` and `demo.<your domain>` as custom domains. In Cloudflare, add the two CNAME records Render shows, with the cloud icon set to **DNS only** (grey), so Render can issue the HTTPS certificates.
+5. **Email from your domain (Resend):** add the domain in Resend and the records it shows to Cloudflare. Then alerts can go to any address.
+6. **Demo account:** create `.env.online` on your computer (never committed) with the Neon `DATABASE_URL`, `DEMO_SITE_HOST` and `DEMO_EMAIL`, then run `npm run db:seed -- --online`. The demo website gets five weeks of A grades, so "Run it now" on demo day shows "A → F". The password is saved in `.env.online`.
+7. **Prove the demo website for real:** the first run prints a TXT record to add to the main domain in Cloudflare (Name `@`; on the main domain because `demo.` already has a CNAME record, and proving the main domain covers its subdomains). Add it, wait a few minutes and run the seed again: the demo website is then verified, and stays so on every later run.
+
+Free Render services sleep after 15 minutes without visitors and take about a minute to wake: open Sentry a few minutes before presenting. Each `git push` to `main` deploys again by itself.
+
 ### Project layout
 
 ```

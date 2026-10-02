@@ -22,8 +22,14 @@ useDemoSettings({ pretendSite: flags['pretend-site'] });
 const databaseUrl = process.env.DATABASE_URL!;
 
 try {
-  await ensureDatabases(databaseUrl, [new URL(databaseUrl).pathname.slice(1)]);
-  await migrateDatabase(databaseUrl);
+  try {
+    await migrateDatabase(databaseUrl);
+  } catch (err) {
+    // On this machine the database may not exist yet (online, the host creates it).
+    if ((err as { code?: string }).code !== '3D000') throw err;
+    await ensureDatabases(databaseUrl, [new URL(databaseUrl).pathname.slice(1)]);
+    await migrateDatabase(databaseUrl);
+  }
   console.log('✓ database is up to date');
 } catch (err) {
   console.error(`✗ ${explainDatabaseError(err)}`);

@@ -4,6 +4,7 @@ import express, { type ErrorRequestHandler } from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import { auth, CLIENT_IP_HEADER } from './auth.ts';
+import { demoSite } from './demo-site.ts';
 import { env } from './env.ts';
 import { logger } from './logger.ts';
 import { domainsRouter } from './routes/domains.ts';
@@ -20,12 +21,24 @@ export type AppOptions = {
    * development: its live reload needs inline scripts and a websocket.
    */
   csp?: boolean;
+  /** Proxies in front of Sentry (see TRUST_PROXY in env.ts). */
+  trustProxy?: number;
+  /** Serve the deliberately weak demo website at this hostname (see DEMO_SITE_HOST in env.ts). */
+  demoSiteHost?: string;
 };
 
-export function createApp({ website, csp = true }: AppOptions = {}) {
+export function createApp({
+  website,
+  csp = true,
+  trustProxy = env.TRUST_PROXY,
+  demoSiteHost = env.DEMO_SITE_HOST,
+}: AppOptions = {}) {
   const app = express();
 
   app.disable('x-powered-by');
+  app.set('trust proxy', trustProxy);
+  // The demo website comes first: it must not get Sentry's own protections, or it wouldn't be weak.
+  if (demoSiteHost) app.use(demoSite(demoSiteHost));
   // Sentry's own security headers. Everything the website loads (scripts, styles, fonts) comes
   // from Sentry itself, so the policy can be strict: no inline or outside scripts at all.
   // Inline styles are allowed because the dialog and chart components set some at run time.
@@ -73,11 +86,11 @@ export function createApp({ website, csp = true }: AppOptions = {}) {
   );
 
   // Sign-in limits are per client address. Better Auth would otherwise trust an X-Forwarded-For
-  // header, which anyone can fake to get a fresh allowance on every try. Nothing sits in front of
-  // Sentry yet, so the connection's own address is the truth (going online behind a proxy: use
-  // Better Auth's trustedProxies instead).
+  // header, which anyone can fake to get a fresh allowance on every try. Express works out the
+  // real address instead: the connection's own on this machine, or, behind the host's proxy
+  // (trust proxy), the address that proxy saw, which a visitor can't fake.
   app.use((req, _res, next) => {
-    req.headers[CLIENT_IP_HEADER] = req.socket.remoteAddress ?? '';
+    req.headers[CLIENT_IP_HEADER] = req.ip ?? '';
     next();
   });
 

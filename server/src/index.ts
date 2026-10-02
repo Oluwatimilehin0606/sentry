@@ -12,7 +12,8 @@ import { startScheduler } from './schedule/runner.ts';
 const client = path.resolve(import.meta.dirname, '../../client');
 const website = path.join(client, 'dist');
 const production = env.NODE_ENV === 'production';
-const port = Number(new URL(env.APP_URL).port) || 80;
+// Online the host picks the port (PORT) and its proxy serves APP_URL; here APP_URL's own port.
+const port = (production && env.PORT) || Number(new URL(env.APP_URL).port) || 80;
 
 if (production && !fs.existsSync(path.join(website, 'index.html'))) {
   console.error('The website hasn’t been built yet. Run `npm run build` first, then start again.');

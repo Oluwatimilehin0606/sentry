@@ -14,13 +14,14 @@ export function envFile(name: string): Record<string, string | undefined> {
 
 /**
  * Sets process.env up for the demo build, before anything reads it: .env, then production mode,
- * then .env.demo for anything the demo should do differently. Same address (APP_URL) and same
- * database as development, so the same accounts work on both.
+ * then `settings` (.env.demo) for anything the demo should do differently. Same address
+ * (APP_URL) and same database as development, so the same accounts work on both. Scripts that
+ * work on online Sentry pass .env.online instead, whose DATABASE_URL is the online database.
  * Exits with a plain message if the settings can't work.
  */
-export function useDemoSettings({ pretendSite = false } = {}): void {
+export function useDemoSettings({ pretendSite = false, settings = '.env.demo' } = {}): void {
   const dotEnv = envFile('.env');
-  const demoEnv = envFile('.env.demo');
+  const demoEnv = envFile(settings);
 
   Object.assign(
     process.env,

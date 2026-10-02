@@ -3,6 +3,7 @@ import path from 'node:path';
 import request from 'supertest';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.ts';
+import { CLIENT_IP_HEADER } from '../src/auth.ts';
 import { pool } from '../src/db/client.ts';
 import { ORIGIN, resetDatabase, signedInAgent } from './helpers.ts';
 
@@ -20,6 +21,27 @@ describe('Sentry’s own security headers', () => {
     expect(csp).toContain("object-src 'none'");
     // Sentry runs on plain http on this machine, so nothing may be forced to https yet.
     expect(csp).not.toContain('upgrade-insecure-requests');
+  });
+});
+
+describe('the visitor address used for sign-in limits', () => {
+  /** The address Sentry hands to Better Auth for this request. */
+  async function seenAs(trustProxy: number, forwardedFor?: string) {
+    const app = createApp({ trustProxy });
+    app.get('/seen-as', (req, res) => {
+      res.send(req.headers[CLIENT_IP_HEADER]);
+    });
+    const req = request(app).get('/seen-as');
+    return (forwardedFor ? req.set('x-forwarded-for', forwardedFor) : req).then((r) => r.text);
+  }
+
+  it('ignores a faked X-Forwarded-For when nothing sits in front of Sentry', async () => {
+    expect(await seenAs(0, '203.0.113.9')).toMatch(/127.0.0.1|::1/);
+  });
+
+  it('takes the address the host’s proxy saw, not one the visitor added in front', async () => {
+    // The visitor sent "203.0.113.9"; the proxy appended the real address it saw.
+    expect(await seenAs(1, '203.0.113.9, 198.51.100.7')).toBe('198.51.100.7');
   });
 });
 

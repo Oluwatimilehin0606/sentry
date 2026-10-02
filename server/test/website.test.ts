@@ -51,3 +51,30 @@ describe('one port: the API also serves the built website', () => {
     expect(res.body.error).toBe('Not found');
   });
 });
+
+describe('the online demo website (DEMO_SITE_HOST)', () => {
+  const demo = () => createApp({ website, demoSiteHost: 'demo.yourbakery.example' });
+
+  it('answers as the deliberately weak website, without Sentry’s protections', async () => {
+    const res = await request(demo()).get('/').set('host', 'demo.yourbakery.example');
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('Mama Adunni');
+    expect(res.headers['content-security-policy']).toBeUndefined();
+    expect(res.headers['x-content-type-options']).toBeUndefined();
+  });
+
+  it('has a public settings file, with made-up values only', async () => {
+    const res = await request(demo()).get('/.env').set('host', 'demo.yourbakery.example');
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('DB_PASSWORD=not-a-real-password');
+  });
+
+  it('leaves Sentry itself as it was on every other address', async () => {
+    const res = await request(demo()).get('/.env').set('host', 'sentry.yourbakery.example');
+
+    expect(res.text).not.toContain('DB_PASSWORD');
+    expect(res.headers['content-security-policy']).toContain("script-src 'self'");
+  });
+});

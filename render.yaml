@@ -1,0 +1,40 @@
+# Sentry online, on Render's free plan: one web service (the website and API together).
+# Render reads this file when you create a "Blueprint" from the repository; see README
+# "Putting Sentry online". Values marked `sync: false` are asked for once and never stored here.
+services:
+  - type: web
+    name: sentry
+    runtime: node
+    plan: free
+    # The closest Render region to Nigeria.
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    # Brings the database up to date, then starts Sentry on the port Render gives it.
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      # Render's proxy sits in front of Sentry (see TRUST_PROXY in server/src/env.ts).
+      - key: TRUST_PROXY
+        value: "1"
+      - key: APP_TIMEZONE
+        value: Africa/Lagos
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      # e.g. https://sentry.yourdomain.com.ng
+      - key: APP_URL
+        sync: false
+      # Neon's connection string (Postgres).
+      - key: DATABASE_URL
+        sync: false
+      # Resend on port 2465 (Render's free plan blocks the usual email ports):
+      # smtps://resend:<API key>@smtp.resend.com:2465
+      - key: SMTP_URL
+        sync: false
+      # e.g. Sentry <alerts@yourdomain.com.ng>
+      - key: MAIL_FROM
+        sync: false
+      # The deliberately weak demo website, e.g. demo.yourdomain.com.ng
+      - key: DEMO_SITE_HOST
+        sync: false
