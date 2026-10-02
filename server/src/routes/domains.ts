@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq, sql } from 'drizzle-orm';
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
@@ -7,7 +7,9 @@ import { domains, scans } from '../db/schema.ts';
 import { hasVerifyRecord, newVerifyToken, TXT_PREFIX } from '../domains/verify.ts';
 import { requireAuth } from '../middleware/require-auth.ts';
 import { firstCheckAt } from '../schedule/plan.ts';
+import { runAutomaticCheck } from '../schedule/runner.ts';
 import { normalizeHostname } from '../scanner/domain.ts';
+import { DAILY_LIMIT } from './scan.ts';
 
 export const domainsRouter = Router();
 domainsRouter.use(requireAuth);
@@ -191,5 +193,74 @@ domainsRouter.post(
       .where(eq(domains.id, row.id))
       .returning();
     res.json({ verified: true, domain: present(updated!) });
+  },
+);
+
+/**
+ * "Run it now" on a website's page: this period's automatic check, straight away. The same check
+ * as the scheduler's (saved as "Automatic", alert email if it got worse), and it counts as this
+ * period's check, so the next one moves to a week or a month from now.
+ */
+domainsRouter.post(
+  '/:id/run-now',
+  rateLimit({
+    windowMs: 60_000,
+    limit: 5,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    keyGenerator: (_req, res) => `run-now:${res.locals.user!.id}`,
+    message: { error: 'That’s a lot of checks in a short time. Please wait a minute and try again.' },
+  }),
+  async (req, res) => {
+    const userId = res.locals.user!.id;
+    const row = await ownDomain(userId, String(req.params.id));
+    if (!row) {
+      res.status(404).json(NOT_FOUND);
+      return;
+    }
+    if (!row.verifiedAt || row.rescanInterval === 'none') {
+      res.status(400).json({ error: `Turn on automatic checks for ${row.hostname} first.` });
+      return;
+    }
+
+    // Move the next check on first, so the scheduler doesn't run the same check meanwhile.
+    const [moved] = await db
+      .update(domains)
+      .set({
+        nextCheckAt: sql`now() + case ${domains.rescanInterval} when 'weekly' then interval '7 days' else interval '1 month' end`,
+      })
+      .where(eq(domains.id, row.id))
+      .returning();
+
+    const result = await runAutomaticCheck({
+      id: row.id,
+      user_id: userId,
+      hostname: row.hostname,
+      rescan_interval: row.rescanInterval,
+      alerts_enabled: row.alertsEnabled,
+    });
+    if (result.outcome === 'skipped') {
+      // The only reason to skip: the daily limit. Put the next check back as it was.
+      await db.update(domains).set({ nextCheckAt: row.nextCheckAt }).where(eq(domains.id, row.id));
+      res.status(429).json({ error: `You’ve run ${DAILY_LIMIT} checks in the last 24 hours. Please try again tomorrow.` });
+      return;
+    }
+    if (result.outcome === 'failed') {
+      res.status(502).json({
+        error: `We couldn’t reach ${row.hostname} just now. Check it’s online, then try again.`,
+        domain: present(moved!),
+      });
+      return;
+    }
+    res.json({
+      result: {
+        outcome: result.outcome,
+        scanId: result.scanId,
+        previous: result.previous ?? null,
+        current: result.current,
+        emailedTo: result.emailedTo ?? null,
+      },
+      domain: present(moved!),
+    });
   },
 );

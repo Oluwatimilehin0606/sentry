@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { Grade } from '@/lib/scan';
 
 /** A website in the signed-in user's account, with the line that proves they own it. */
 export type Domain = {
@@ -93,6 +94,55 @@ export function scheduleLine(domain: Domain): string | null {
   if (domain.rescanInterval === 'none' || !domain.nextCheckAt) return null;
   const every = domain.rescanInterval === 'weekly' ? 'week' : 'month';
   return `Checked every ${every} · next ${nextDay.format(new Date(domain.nextCheckAt))}`;
+}
+
+/** What "Run it now" found: the automatic check, run straight away. */
+export type RunNowResult = {
+  outcome: 'checked' | 'alerted';
+  scanId: string;
+  previous: { grade: Grade; score: number } | null;
+  current: { grade: Grade; score: number };
+  /** Where the alert email went, when one was sent. */
+  emailedTo: string | null;
+};
+
+export function useRunNow() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      call<{ result: RunNowResult; domain: Domain }>(`/api/domains/${id}/run-now`, { method: 'POST' }),
+    onSuccess: ({ domain }) => {
+      client.setQueryData<Domain[]>(KEY, (list) => list?.map((d) => (d.id === domain.id ? domain : d)));
+      // The new check shows in the chart and the lists.
+      void client.invalidateQueries({ queryKey: ['scans'] });
+    },
+    // A failed run still moved the next check on.
+    onError: () => client.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
+const GRADE_ORDER: Grade[] = ['A', 'B', 'C', 'D', 'F'];
+const withArticle = (grade: Grade) => (grade === 'A' || grade === 'F' ? `an ${grade}` : `a ${grade}`);
+
+/** The sentences under "Run it now": did it get worse, and was the email sent? */
+export function runNowSummary(hostname: string, r: RunNowResult): { worse: boolean; text: string; email?: string } {
+  const { previous, current } = r;
+  const dropped = !!previous && GRADE_ORDER.indexOf(current.grade) > GRADE_ORDER.indexOf(previous.grade);
+  const worse = dropped || r.outcome === 'alerted';
+  const email = r.emailedTo ? { email: `Alert email sent to ${r.emailedTo}.` } : {};
+  if (dropped) {
+    return { worse, text: `${hostname} dropped from ${withArticle(previous!.grade)} to ${withArticle(current.grade)}.`, ...email };
+  }
+  if (worse) return { worse, text: `${hostname} has a new problem to fix.`, ...email };
+  if (previous && GRADE_ORDER.indexOf(current.grade) < GRADE_ORDER.indexOf(previous.grade)) {
+    return { worse, text: `Checked just now: up from ${withArticle(previous.grade)} to ${withArticle(current.grade)} (${current.score}).` };
+  }
+  return {
+    worse,
+    text: previous
+      ? `Checked just now: still ${withArticle(current.grade)} (${current.score}). No email needed.`
+      : `Checked just now: ${withArticle(current.grade)} (${current.score}).`,
+  };
 }
 
 export function useVerifyDomain() {

@@ -7,7 +7,7 @@ import { alertEmail } from '../src/email/alert.ts';
 import type { Email } from '../src/email/mailer.ts';
 import type { Finding } from '../src/scanner/checks.ts';
 import { buildReport } from '../src/scanner/scan.ts';
-import { runDueChecks } from '../src/schedule/runner.ts';
+import { runAutomaticCheck, runDueChecks } from '../src/schedule/runner.ts';
 import { saveScan } from '../src/scans/store.ts';
 import { startFixture, type Fixture } from './fixture-server.ts';
 import { resetDatabase, signedInAgent } from './helpers.ts';
@@ -125,6 +125,46 @@ describe('running automatic checks', () => {
     const results = await runDueChecks({ contextFor: () => fixture!.ctx, send: async (e) => (sent.push(e), true) });
     expect(results).toEqual([{ hostname: 'localhost', outcome: 'checked' }]);
     expect(sent).toEqual([]);
+  });
+
+  it('reports what one check found, for "Run it now"', async () => {
+    const site = await dueWebsite(true);
+    fixture = await startFixture({ http: 'serve' });
+    const result = await runAutomaticCheck(
+      { id: site.id, user_id: ownerId, hostname: 'localhost', rescan_interval: 'weekly', alerts_enabled: true },
+      { contextFor: () => fixture!.ctx, send: async () => true },
+    );
+
+    expect(result).toMatchObject({ outcome: 'alerted', previous: { grade: 'A', score: 100 }, emailedTo: 'owner@yourbakery.example' });
+    expect(result.current!.grade).toMatch(/^[DF]$/);
+    const [saved] = await db.select().from(scans).where(eq(scans.id, result.scanId!));
+    expect(saved).toMatchObject({ trigger: 'scheduled', mode: 'full' });
+  });
+
+  describe('"Run it now" on the website page', () => {
+    it('needs a verified website with automatic checks on', async () => {
+      const site = (await owner.post('/api/domains').send({ domain: 'quiet.yourbakery.example' })).body.domain;
+      const res = await owner.post(`/api/domains/${site.id}/run-now`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('Turn on automatic checks for quiet.yourbakery.example first.');
+    });
+
+    it('counts as this week’s check, and explains plainly when the website can’t be reached', async () => {
+      // "localhost" is this machine, which real checks refuse, so the check can't reach it.
+      const site = await dueWebsite(true);
+      const res = await owner.post(`/api/domains/${site.id}/run-now`);
+
+      expect(res.status).toBe(502);
+      expect(res.body.error).toBe('We couldn’t reach localhost just now. Check it’s online, then try again.');
+      expect(new Date(res.body.domain.nextCheckAt).getTime()).toBeGreaterThan(Date.now() + 6 * 24 * 60 * 60 * 1000);
+    });
+
+    it('can’t run another account’s website', async () => {
+      const site = await dueWebsite(true);
+      const stranger = await signedInAgent(app, 'stranger@elsewhere.example');
+      expect((await stranger.post(`/api/domains/${site.id}/run-now`)).status).toBe(404);
+    });
   });
 });
 

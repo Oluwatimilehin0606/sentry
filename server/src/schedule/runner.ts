@@ -12,7 +12,7 @@ import { scanHost } from '../scanner/scan.ts';
 import { countScansSince, getScan, saveScan } from '../scans/store.ts';
 import { shouldAlert } from './plan.ts';
 
-type Due = {
+export type Due = {
   id: string;
   user_id: string;
   hostname: string;
@@ -54,64 +54,91 @@ async function claimDue(now: Date, batch: number): Promise<Due[]> {
   return result.rows;
 }
 
-/** Runs every automatic check that's due. Called once a minute by the scheduler. */
-export async function runDueChecks(opts: RunOptions = {}): Promise<RunResult> {
+/** What one automatic check found, for the website page's "Run it now". */
+export type CheckOutcome = {
+  hostname: string;
+  outcome: 'checked' | 'alerted' | 'skipped' | 'failed';
+  reason?: string;
+  scanId?: string;
+  previous?: { grade: string; score: number } | null;
+  current?: { grade: string; score: number };
+  /** Set when the alert email went out. */
+  emailedTo?: string;
+};
+
+/**
+ * Runs one website's automatic check: the full check, saved as "Automatic", and the alert email
+ * if things got worse. Used by the scheduler and by "Run it now" on the website's page.
+ */
+export async function runAutomaticCheck(due: Due, opts: RunOptions = {}): Promise<CheckOutcome> {
   const now = opts.now ?? new Date();
   const reach = opts.contextFor ?? contextFor;
   const send = opts.send ?? defaultSend;
+
+  // Automatic checks count towards the same daily limit as checks people start.
+  if ((await countScansSince(due.user_id, new Date(now.getTime() - DAY_MS))) >= DAILY_LIMIT) {
+    return { hostname: due.hostname, outcome: 'skipped', reason: 'daily limit' };
+  }
+  let id: string;
+  try {
+    const report = await scanHost(due.hostname, reach(due.hostname), undefined, 'full');
+    id = await saveScan(due.user_id, report, 'scheduled');
+  } catch (err) {
+    logger.warn({ hostname: due.hostname, err: (err as Error).message }, 'Automatic check failed');
+    return { hostname: due.hostname, outcome: 'failed', reason: (err as Error).message };
+  }
+
+  const saved = await getScan(due.user_id, id);
+  const changes = saved?.changes;
+  const result: CheckOutcome = {
+    hostname: due.hostname,
+    outcome: 'checked',
+    scanId: id,
+    previous: changes ? { grade: changes.previous.grade, score: changes.previous.score } : null,
+    current: saved ? { grade: saved.grade, score: saved.score } : undefined,
+  };
+  const appeared = (changes?.appeared ?? []).map((checkId) => ({
+    checkId,
+    ...CATALOG[checkId as CheckId],
+  }));
+  if (
+    !saved ||
+    !changes ||
+    !due.alerts_enabled ||
+    !shouldAlert(
+      changes.previous.grade,
+      saved.grade,
+      appeared.map((a) => a.severity),
+    )
+  ) {
+    return result;
+  }
+
+  const [owner] = await db.select({ email: user.email }).from(user).where(eq(user.id, due.user_id));
+  const email = alertEmail({
+    hostname: due.hostname,
+    interval: due.rescan_interval,
+    previous: { grade: changes.previous.grade, score: changes.previous.score },
+    current: { grade: saved.grade, score: saved.score, scannedAt: saved.scannedAt },
+    appeared: appeared
+      .filter((a) => a.severity !== 'low')
+      .map((a) => ({ title: a.title, severity: a.severity })),
+    reportUrl: `${env.APP_URL}/reports/${id}`,
+    settingsUrl: `${env.APP_URL}/websites/${due.hostname}?alerts=off`,
+    timeZone: env.APP_TIMEZONE,
+  });
+  const sent = owner ? await send({ to: owner.email, ...email }) : false;
+  return sent
+    ? { ...result, outcome: 'alerted', emailedTo: owner!.email }
+    : { ...result, reason: 'email not sent' };
+}
+
+/** Runs every automatic check that's due. Called once a minute by the scheduler. */
+export async function runDueChecks(opts: RunOptions = {}): Promise<RunResult> {
   const results: RunResult = [];
-
-  for (const due of await claimDue(now, opts.batch ?? 5)) {
-    // Automatic checks count towards the same daily limit as checks people start.
-    if ((await countScansSince(due.user_id, new Date(now.getTime() - DAY_MS))) >= DAILY_LIMIT) {
-      results.push({ hostname: due.hostname, outcome: 'skipped', reason: 'daily limit' });
-      continue;
-    }
-    let id: string;
-    try {
-      const report = await scanHost(due.hostname, reach(due.hostname), undefined, 'full');
-      id = await saveScan(due.user_id, report, 'scheduled');
-    } catch (err) {
-      logger.warn({ hostname: due.hostname, err: (err as Error).message }, 'Automatic check failed');
-      results.push({ hostname: due.hostname, outcome: 'failed', reason: (err as Error).message });
-      continue;
-    }
-
-    const saved = await getScan(due.user_id, id);
-    const changes = saved?.changes;
-    const appeared = (changes?.appeared ?? []).map((checkId) => ({
-      checkId,
-      ...CATALOG[checkId as CheckId],
-    }));
-    if (
-      !saved ||
-      !changes ||
-      !due.alerts_enabled ||
-      !shouldAlert(
-        changes.previous.grade,
-        saved.grade,
-        appeared.map((a) => a.severity),
-      )
-    ) {
-      results.push({ hostname: due.hostname, outcome: 'checked' });
-      continue;
-    }
-
-    const [owner] = await db.select({ email: user.email }).from(user).where(eq(user.id, due.user_id));
-    const email = alertEmail({
-      hostname: due.hostname,
-      interval: due.rescan_interval,
-      previous: { grade: changes.previous.grade, score: changes.previous.score },
-      current: { grade: saved.grade, score: saved.score, scannedAt: saved.scannedAt },
-      appeared: appeared
-        .filter((a) => a.severity !== 'low')
-        .map((a) => ({ title: a.title, severity: a.severity })),
-      reportUrl: `${env.APP_URL}/reports/${id}`,
-      settingsUrl: `${env.APP_URL}/websites/${due.hostname}?alerts=off`,
-      timeZone: env.APP_TIMEZONE,
-    });
-    const sent = owner ? await send({ to: owner.email, ...email }) : false;
-    results.push({ hostname: due.hostname, outcome: sent ? 'alerted' : 'checked', reason: sent ? undefined : 'email not sent' });
+  for (const due of await claimDue(opts.now ?? new Date(), opts.batch ?? 5)) {
+    const { hostname, outcome, reason } = await runAutomaticCheck(due, opts);
+    results.push(reason ? { hostname, outcome, reason } : { hostname, outcome });
   }
   return results;
 }

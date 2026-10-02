@@ -1,7 +1,10 @@
 import { Check, Loader2 } from 'lucide-react';
 import { useId } from 'react';
+import { Link } from 'react-router';
 import { FormError } from '@/components/FormError';
-import { useUpdateDomain, type Domain, type RescanInterval } from '@/lib/domains';
+import { Button } from '@/components/ui/button';
+import { runNowSummary, useRunNow, useUpdateDomain, type Domain, type RescanInterval } from '@/lib/domains';
+import { GRADE_COLOR } from '@/lib/grading';
 import { cn } from '@/lib/utils';
 
 const CHOICES: { value: RescanInterval; label: string }[] = [
@@ -16,6 +19,7 @@ const nextTime = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-
 /** How often Sentry checks a verified website by itself, and whether to email when it gets worse. */
 export function AutomaticChecks({ domain, email }: { domain: Domain; email?: string }) {
   const update = useUpdateDomain();
+  const runNow = useRunNow();
   const name = useId();
   const verified = !!domain.verifiedAt;
 
@@ -77,9 +81,24 @@ export function AutomaticChecks({ domain, email }: { domain: Domain; email?: str
       </fieldset>
 
       {next && (
-        <p className="text-[0.9375rem]">
-          Next check: <strong className="font-semibold">{nextDay.format(next)}</strong>, around {nextTime.format(next)}.
-        </p>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <p className="text-[0.9375rem]">
+              Next check: <strong className="font-semibold">{nextDay.format(next)}</strong>, around {nextTime.format(next)}.
+            </p>
+            {/* This period's automatic check, straight away (and the alert email if it got worse). */}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={runNow.isPending}
+              onClick={() => runNow.mutate(domain.id)}
+              className="font-semibold"
+            >
+              Run it now
+            </Button>
+          </div>
+          <RunNowStatus hostname={domain.hostname} run={runNow} />
+        </div>
       )}
 
       <label className="flex cursor-pointer items-start gap-3 border-t pt-4">
@@ -114,5 +133,57 @@ export function AutomaticChecks({ domain, email }: { domain: Domain; email?: str
         ) : null}
       </div>
     </section>
+  );
+}
+
+/** While "Run it now" runs, then what it found (or why it couldn't run). */
+function RunNowStatus({ hostname, run }: { hostname: string; run: ReturnType<typeof useRunNow> }) {
+  return (
+    <div aria-live="polite">
+      {run.isPending ? (
+        <p className="flex items-center gap-2.5 rounded-[10px] bg-muted px-3.5 py-3 text-[0.9375rem]">
+          <Loader2 className="size-4.5 animate-spin text-primary" aria-hidden="true" />
+          Running the automatic check of {hostname}…
+        </p>
+      ) : run.isError ? (
+        <FormError message={run.error.message} />
+      ) : run.isSuccess ? (
+        <RunNowResult hostname={hostname} data={run.data.result} />
+      ) : null}
+    </div>
+  );
+}
+
+function RunNowResult({ hostname, data }: { hostname: string; data: Parameters<typeof runNowSummary>[1] }) {
+  const { worse, text, email } = runNowSummary(hostname, data);
+  const report = (
+    <Link to={`/reports/${data.scanId}`} className="font-semibold text-primary underline-offset-4 hover:underline">
+      See the report
+    </Link>
+  );
+  if (!worse) {
+    return (
+      <p className="flex items-start gap-2.5 rounded-[10px] bg-pass-soft px-3.5 py-3 text-[0.9375rem]">
+        <Check className="mt-0.5 size-4.5 shrink-0 text-pass" strokeWidth={3} aria-hidden="true" />
+        <span>
+          {text} {report}
+        </span>
+      </p>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-1.5 rounded-[10px] border border-critical/40 bg-critical-soft px-4 py-3.5 text-[0.9375rem]">
+      {data.previous && (
+        <span className="flex items-baseline gap-2.5 font-display text-xl font-bold" aria-hidden="true">
+          <span style={{ color: GRADE_COLOR[data.previous.grade] }}>{data.previous.grade}</span>
+          <span className="text-base font-normal text-muted-foreground">→</span>
+          <span style={{ color: GRADE_COLOR[data.current.grade] }}>{data.current.grade}</span>
+        </span>
+      )}
+      <span className="font-semibold">{text}</span>
+      <span>
+        {email} {report}
+      </span>
+    </div>
   );
 }
