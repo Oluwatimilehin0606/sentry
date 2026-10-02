@@ -134,6 +134,7 @@ Sentry needs PostgreSQL 18 running locally.
 | `npm run db:create` | Creates the dev and test databases (safe to re-run) |
 | `npm run db:generate` | Generates a migration from schema changes |
 | `npm run db:migrate` | Applies migrations to the dev database |
+| `npm run demo:test-email` | Sends one example alert email to the demo account's address (`DEMO_EMAIL`), through the demo's email settings |
 | `npm run db:seed` | Adds (or replaces) the demo account, with websites that have weeks of history |
 | `npm run db:studio` | Opens Drizzle Studio to browse the data |
 

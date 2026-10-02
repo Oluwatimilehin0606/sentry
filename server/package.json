@@ -15,6 +15,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "node scripts/seed-demo.ts",
+    "demo:test-email": "node scripts/demo-test-email.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
