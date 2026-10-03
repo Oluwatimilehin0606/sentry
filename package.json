@@ -18,13 +18,13 @@
     "demo:site": "node e2e/fixture-site.ts",
     "mail": "maildev --smtp 1025 --web 1080 --ip 127.0.0.1 --web-ip 127.0.0.1",
     "demo:verify": "node e2e/publish-txt.ts",
-    "demo:test-email": "npm run demo:test-email -w server",
+    "demo:test-email": "npm run demo:test-email -w server --",
     "scan": "npm run scan -w server --",
     "format": "prettier --write .",
     "db:create": "npm run db:create -w server",
     "db:generate": "npm run db:generate -w server",
     "db:migrate": "npm run db:migrate -w server",
-    "db:seed": "npm run db:seed -w server",
+    "db:seed": "npm run db:seed -w server --",
     "db:studio": "npm run db:studio -w server"
   },
   "devDependencies": {
