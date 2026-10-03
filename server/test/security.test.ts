@@ -39,6 +39,12 @@ describe('the visitor address used for sign-in limits', () => {
     expect(await seenAs(0, '203.0.113.9')).toMatch(/127.0.0.1|::1/);
   });
 
+  it('finds the visitor behind Render’s three hops, even if they add a fake address', async () => {
+    // As measured on Render: visitor, then Cloudflare, then Render's load balancer (the relay on the
+    // machine itself is the connection). The visitor tried to slip "203.0.113.9" in front.
+    expect(await seenAs(3, '203.0.113.9, 198.51.100.7, 172.71.0.1, 10.29.0.1')).toBe('198.51.100.7');
+  });
+
   it('takes the address the host’s proxy saw, not one the visitor added in front', async () => {
     // The visitor sent "203.0.113.9"; the proxy appended the real address it saw.
     expect(await seenAs(1, '203.0.113.9, 198.51.100.7')).toBe('198.51.100.7');

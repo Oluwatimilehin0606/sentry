@@ -19,9 +19,11 @@ services:
       # to APP_URL's port (80), and a deploy once waited for a health check on 10000 until it failed.
       - key: PORT
         value: "10000"
-      # Render's proxy sits in front of Sentry (see TRUST_PROXY in server/src/env.ts).
+      # Three proxies sit in front of Sentry on Render (measured 2026-10-03): Cloudflare (Render's
+      # edge), Render's load balancer, and a relay on the machine itself. See TRUST_PROXY in
+      # server/src/env.ts.
       - key: TRUST_PROXY
-        value: "1"
+        value: "3"
       - key: APP_TIMEZONE
         value: Africa/Lagos
       - key: BETTER_AUTH_SECRET

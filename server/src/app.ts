@@ -117,19 +117,6 @@ export function createApp({
 
   app.use(express.json({ limit: '10kb' }));
 
-  // TEMPORARY (2026-10-03): shows a visitor their own address details, to find which header
-  // carries the real visitor address behind Render. Remove once TRUST_PROXY is settled.
-  app.get('/api/whoami', (req, res) => {
-    const h = req.headers;
-    res.json({
-      ip: req.ip,
-      socket: req.socket.remoteAddress,
-      xForwardedFor: h['x-forwarded-for'] ?? null,
-      cfConnectingIp: h['cf-connecting-ip'] ?? null,
-      trueClientIp: h['true-client-ip'] ?? null,
-      xRealIp: h['x-real-ip'] ?? null,
-    });
-  });
   app.use('/api/health', healthRouter);
   app.use('/api/me', meRouter);
   app.use('/api/domains', domainsRouter);

@@ -7,7 +7,7 @@ const EnvSchema = z.object({
   // Online, the host says which port to listen on (its proxy serves APP_URL). Production only:
   // development tools often set PORT for something else.
   PORT: z.coerce.number().int().positive().optional(),
-  // How many proxies stand between visitors and Sentry (1 on Render). Their X-Forwarded-For
+  // How many proxies stand between visitors and Sentry (3 on Render). Their X-Forwarded-For
   // header then gives each visitor's real address, for the sign-in limits. 0 on this machine.
   TRUST_PROXY: z.coerce.number().int().min(0).default(0),
   // The deliberately weak demo website served by Sentry's own server (online demo only),
