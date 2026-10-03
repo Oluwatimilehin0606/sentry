@@ -50,7 +50,7 @@ server.on('error', (err: NodeJS.ErrnoException) => {
 });
 
 server.listen(port, () => {
-  logger.info(`Sentry is running at ${env.APP_URL}`);
+  logger.info(`Sentry is running at ${env.APP_URL}${production ? ` (listening on port ${port})` : ''}`);
   // Automatic checks run inside this process; tests (and the browser test) run without them.
   if (env.NODE_ENV !== 'test') {
     startScheduler();

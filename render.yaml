@@ -15,6 +15,10 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "24"
+      # The port Render's health check and proxy use. Set explicitly: without it Sentry falls back
+      # to APP_URL's port (80), and a deploy once waited for a health check on 10000 until it failed.
+      - key: PORT
+        value: "10000"
       # Render's proxy sits in front of Sentry (see TRUST_PROXY in server/src/env.ts).
       - key: TRUST_PROXY
         value: "1"
