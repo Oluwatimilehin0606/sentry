@@ -11,7 +11,8 @@ services:
     buildCommand: npm ci && npm run build
     # Brings the database up to date, then starts Sentry on the port Render gives it.
     startCommand: npm start
-    healthCheckPath: /api/health
+    # No healthCheckPath: on the free plan Render's health checks never reached new instances
+    # (2026-10-03), so every deploy timed out. Without it Render goes live once the port opens.
     envVars:
       - key: NODE_VERSION
         value: "24"
