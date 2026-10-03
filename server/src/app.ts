@@ -27,6 +27,8 @@ export type AppOptions = {
   demoSiteHost?: string;
 };
 
+const startedAt = Date.now();
+
 export function createApp({
   website,
   csp = true,
@@ -81,7 +83,12 @@ export function createApp({
         `${req.method} ${(req as express.Request).originalUrl} → ${res.statusCode} failed: ${err.message}`,
       // Only API calls: not the status badge polling /api/health every few seconds, and not the
       // website's own files.
-      autoLogging: { ignore: (req) => req.url === '/api/health' || !req.url?.startsWith('/api') },
+      // Health checks do show for the first 3 minutes after start, when the host checks a new
+      // deploy before sending visitors to it.
+      autoLogging: {
+        ignore: (req) =>
+          (req.url === '/api/health' && Date.now() - startedAt > 3 * 60_000) || !req.url?.startsWith('/api'),
+      },
     }),
   );
 
