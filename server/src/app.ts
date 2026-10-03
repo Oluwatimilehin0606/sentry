@@ -25,6 +25,11 @@ export type AppOptions = {
   trustProxy?: number;
   /** Serve the deliberately weak demo website at this hostname (see DEMO_SITE_HOST in env.ts). */
   demoSiteHost?: string;
+  /**
+   * Sentry's one public address (APP_URL, online only). Requests for any other name, such as the
+   * main domain csentinel.com.ng, are forwarded there, so sign-in cookies and links always match.
+   */
+  canonicalUrl?: string;
 };
 
 const startedAt = Date.now();
@@ -34,6 +39,7 @@ export function createApp({
   csp = true,
   trustProxy = env.TRUST_PROXY,
   demoSiteHost = env.DEMO_SITE_HOST,
+  canonicalUrl = env.NODE_ENV === 'production' ? env.APP_URL : undefined,
 }: AppOptions = {}) {
   const app = express();
 
@@ -41,6 +47,14 @@ export function createApp({
   app.set('trust proxy', trustProxy);
   // The demo website comes first: it must not get Sentry's own protections, or it wouldn't be weak.
   if (demoSiteHost) app.use(demoSite(demoSiteHost));
+  if (canonicalUrl) {
+    const canonical = new URL(canonicalUrl);
+    app.use((req, res, next) => {
+      if (req.hostname === canonical.hostname) return next();
+      // 308 keeps the method, so a form posted to the old address still arrives.
+      res.redirect(308, new URL(req.originalUrl, canonical.origin).href);
+    });
+  }
   // Sentry's own security headers. Everything the website loads (scripts, styles, fonts) comes
   // from Sentry itself, so the policy can be strict: no inline or outside scripts at all.
   // Inline styles are allowed because the dialog and chart components set some at run time.

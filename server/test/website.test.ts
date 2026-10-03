@@ -78,3 +78,20 @@ describe('the online demo website (DEMO_SITE_HOST)', () => {
     expect(res.headers['content-security-policy']).toContain("script-src 'self'");
   });
 });
+
+describe('one public address online (APP_URL)', () => {
+  const online = () =>
+    createApp({ website, demoSiteHost: 'demo.yourbakery.example', canonicalUrl: 'https://sentry.yourbakery.example' });
+
+  it('forwards the main domain to Sentry’s address, keeping the page', async () => {
+    const res = await request(online()).get('/websites/x?alerts=off').set('host', 'yourbakery.example');
+
+    expect(res.status).toBe(308);
+    expect(res.headers.location).toBe('https://sentry.yourbakery.example/websites/x?alerts=off');
+  });
+
+  it('serves Sentry on its own address, and the demo website on its own', async () => {
+    expect((await request(online()).get('/api/health').set('host', 'sentry.yourbakery.example')).status).toBe(200);
+    expect((await request(online()).get('/').set('host', 'demo.yourbakery.example')).text).toContain('Mama Adunni');
+  });
+});
