@@ -49,7 +49,9 @@ server.on('error', (err: NodeJS.ErrnoException) => {
   throw err;
 });
 
-server.listen(port, () => {
+// Online, listen on every IPv4 interface (0.0.0.0), as Render requires: without it Node picks
+// its IPv6 default, which Render's proxy and health checks never reached.
+server.listen(port, production ? '0.0.0.0' : undefined, () => {
   logger.info(`Sentry is running at ${env.APP_URL}${production ? ` (listening on port ${port})` : ''}`);
   // Automatic checks run inside this process; tests (and the browser test) run without them.
   if (env.NODE_ENV !== 'test') {
