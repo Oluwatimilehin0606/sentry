@@ -15,6 +15,11 @@ export function authErrorMessage(error: AuthError): string {
       return 'Use at least 12 characters for your password.';
     case 'PASSWORD_TOO_LONG':
       return 'Use 128 characters or fewer for your password.';
+    case 'EMAIL_NOT_VERIFIED':
+      return 'Please confirm your email first. We’ve sent you a new link.';
+    case 'INVALID_TOKEN':
+    case 'TOKEN_EXPIRED':
+      return 'That link has expired or was already used.';
     case 'INVALID_EMAIL':
       return 'Enter a valid email address, like you@yourbakery.com.';
     default:

@@ -22,6 +22,13 @@
       "when": 1790867857511,
       "tag": "0002_automatic_checks",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791222169954,
+      "tag": "0003_existing_accounts_confirmed",
+      "breakpoints": true
     }
   ]
 }

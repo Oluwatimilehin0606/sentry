@@ -6,4 +6,10 @@ export const authClient = createAuthClient({
   basePath: '/api/auth',
 });
 
-export const { useSession, signIn, signUp, signOut } = authClient;
+export const { useSession, signIn, signUp, signOut, sendVerificationEmail, requestPasswordReset, resetPassword } = authClient;
+
+/**
+ * Where the "confirm your email" link lands. Confirmed: the person is signed in, and sign-in sends
+ * them on to Home. Link expired or already used: sign-in explains, with ?error=.
+ */
+export const CONFIRMED_URL = '/sign-in?confirmed=1';

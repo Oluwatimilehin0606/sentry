@@ -60,6 +60,8 @@ export default defineConfig({
         DATABASE_URL: process.env.E2E_DATABASE_URL,
         SENTRY_E2E_SITES: JSON.stringify({ 'bakery.test': { https: 8443, http: 8081, caFile: path.join(TMP, 'ca.pem') } }),
         SENTRY_E2E_TXT_FILE: path.join(TMP, 'txt.json'),
+        // Emails (e.g. "confirm your email") are written here instead of sent.
+        TEST_OUTBOX_FILE: path.join(TMP, 'outbox.jsonl'),
       },
     },
   ],

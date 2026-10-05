@@ -18,4 +18,5 @@ export default async function setup() {
     await pool.end();
   }
   fs.rmSync(path.resolve(import.meta.dirname, '.tmp/txt.json'), { force: true });
+  fs.rmSync(path.resolve(import.meta.dirname, '.tmp/outbox.jsonl'), { force: true });
 }

@@ -14,6 +14,8 @@ const ReportPage = lazy(() => import('@/pages/ReportPage').then((m) => ({ defaul
 const AccountPage = lazy(() => import('@/pages/AccountPage').then((m) => ({ default: m.AccountPage })));
 const SignInPage = lazy(() => import('@/pages/SignInPage').then((m) => ({ default: m.SignInPage })));
 const SignUpPage = lazy(() => import('@/pages/SignUpPage').then((m) => ({ default: m.SignUpPage })));
+const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
 
 export function App() {
@@ -25,9 +27,11 @@ export function App() {
           <Route element={<PublicLayout />}>
             <Route index element={<LandingPage />} />
           </Route>
-          {/* Sign-in and sign-up bring their own split-screen frame. */}
+          {/* Sign-in, sign-up and password reset bring their own split-screen frame. */}
           <Route path="sign-in" element={<SignInPage />} />
           <Route path="sign-up" element={<SignUpPage />} />
+          <Route path="forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="reset-password" element={<ResetPasswordPage />} />
 
           {/* Using Sentry needs an account. */}
           <Route element={<RequireAuth />}>

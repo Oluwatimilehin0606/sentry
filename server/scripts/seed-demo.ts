@@ -91,12 +91,22 @@ try {
   // A fresh demo account each time (its websites and checks go with it); nobody else's is touched.
   await db.delete(user).where(eq(user.email, email));
 
-  const signUp = await auth.api.signUpEmail({
-    body: { name: 'Adunni', email, password, acceptTerms: true } as { name: string; email: string; password: string },
+  // Made directly rather than through sign-up: the demo account is confirmed from the start, and
+  // no "confirm your email" message goes to the demo inbox.
+  const authContext = await auth.$context;
+  const demoUser = await authContext.internalAdapter.createUser(
+    { name: 'Adunni', email, emailVerified: true },
+    { method: 'email-password' },
+  );
+  await authContext.internalAdapter.linkAccount({
+    userId: demoUser.id,
+    providerId: 'credential',
+    accountId: demoUser.id,
+    password: await authContext.password.hash(password),
   });
   console.log(`✓ demo account: ${email} (password in ${SETTINGS})`);
 
-  for (const site of await plantDemoWebsites(signUp.user.id, { demoSite: DEMO_SITE, demoToken, demoVerified })) {
+  for (const site of await plantDemoWebsites(demoUser.id, { demoSite: DEMO_SITE, demoToken, demoVerified })) {
     const history = site.grades.map((g) => `${g.grade} ${g.score}`).join(' → ');
     console.log(`✓ ${site.hostname}${site.verified ? '' : ' (not proven yet)'}${history ? `: ${history}` : ''}`);
   }

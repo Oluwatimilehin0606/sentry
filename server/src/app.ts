@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { toNodeHandler } from 'better-auth/node';
 import express, { type ErrorRequestHandler } from 'express';
+import { rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import { auth, CLIENT_IP_HEADER } from './auth.ts';
@@ -31,6 +32,8 @@ export type AppOptions = {
    * main domain csentinel.com.ng, are forwarded there, so sign-in cookies and links always match.
    */
   canonicalUrl?: string;
+  /** API requests allowed per visitor address per minute, all routes together. */
+  apiLimit?: number;
 };
 
 const startedAt = Date.now();
@@ -41,6 +44,7 @@ export function createApp({
   trustProxy = env.TRUST_PROXY,
   demoSiteHost = env.DEMO_SITE_HOST,
   canonicalUrl = env.NODE_ENV === 'production' ? env.APP_URL : undefined,
+  apiLimit = 300,
 }: AppOptions = {}) {
   const app = express();
 
@@ -127,6 +131,20 @@ export function createApp({
     res.set('cache-control', 'no-store');
     next();
   });
+
+  // An outer fence for the whole API, per visitor address: far above what one person using Sentry
+  // needs, so it only ever stops scripts hammering it. Busy parts have tighter limits of their own
+  // (sign-in, emails, checks, downloads).
+  app.use(
+    '/api',
+    rateLimit({
+      windowMs: 60_000,
+      limit: apiLimit,
+      standardHeaders: 'draft-8',
+      legacyHeaders: false,
+      message: { error: 'Too many requests in a short time. Please wait a minute and try again.' },
+    }),
+  );
 
   // Better Auth reads the raw request body itself, so it must come before express.json().
   // It also checks the Origin of its own POSTs against trustedOrigins.

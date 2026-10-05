@@ -9,15 +9,29 @@ import { expect, test } from '@playwright/test';
  */
 const SITE = 'bakery.test';
 const TXT_FILE = path.resolve(import.meta.dirname, '.tmp/txt.json');
+const OUTBOX = path.resolve(import.meta.dirname, '.tmp/outbox.jsonl');
+
+/** The link in the newest email to this address (the test server writes emails to OUTBOX). */
+function emailedLink(to: string): string {
+  const lines = fs.readFileSync(OUTBOX, 'utf8').trim().split('\n');
+  const emails = lines.map((line) => JSON.parse(line) as { to: string; text: string });
+  const text = emails.findLast((e) => e.to === to)?.text ?? '';
+  return text.match(/https?:\/\/\S+/)![0];
+}
 
 test('sign up, check, verify, full check, reopen the report', async ({ page }) => {
   // Sign up.
   await page.goto('/sign-up');
   await page.getByLabel('Your name').fill('Ada Baker');
-  await page.getByLabel('Email').fill(`ada+${Date.now()}@bakery.test`);
+  const email = `ada+${Date.now()}@bakery.test`;
+  await page.getByLabel('Email').fill(email);
   await page.locator('#password').fill('fresh-loaves-every-morning');
   await page.getByRole('checkbox', { name: /only scan websites I own/ }).check();
   await page.getByRole('button', { name: 'Create account' }).click();
+
+  // Confirm the email: the link signs in and opens Home.
+  await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+  await page.goto(emailedLink(email));
   await expect(page).toHaveURL(/\/home$/);
 
   // A light check of a website not yet proven: no private files.

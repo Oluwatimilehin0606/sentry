@@ -7,11 +7,12 @@ import { z } from 'zod';
 import { AuthShell } from '@/components/AuthShell';
 import { FormError } from '@/components/FormError';
 import { FormField } from '@/components/FormField';
+import { FormNotice } from '@/components/FormNotice';
 import { PasswordInput } from '@/components/PasswordInput';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { authErrorMessage, safeNextPath } from '@/lib/auth-errors';
-import { signIn, useSession } from '@/lib/auth-client';
+import { CONFIRMED_URL, signIn, useSession } from '@/lib/auth-client';
 
 const SignInSchema = z.object({
   email: z.email('Enter the email you signed up with.'),
@@ -25,7 +26,13 @@ export function SignInPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = safeNextPath(params.get('next'));
-  const [formError, setFormError] = useState<string | null>(null);
+  // Arriving from an email's link that had expired or was already used (see CONFIRMED_URL).
+  const linkFailed = params.has('error');
+  const [formError, setFormError] = useState<string | null>(
+    linkFailed ? 'That confirm link has expired or was already used. Sign in and we’ll send you a new one.' : null,
+  );
+  // Arriving from "Choose a new password".
+  const passwordReset = params.get('reset') === '1' && !formError;
 
   const {
     register,
@@ -40,7 +47,12 @@ export function SignInPage() {
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
-    const { error } = await signIn.email(values);
+    // Not confirmed yet: Better Auth sends a fresh link, which lands back here.
+    const { error } = await signIn.email({ ...values, callbackURL: CONFIRMED_URL });
+    if (error?.code === 'EMAIL_NOT_VERIFIED') {
+      setFormError(`Please confirm your email first. We’ve sent a new link to ${values.email}.`);
+      return;
+    }
     if (error) {
       setFormError(authErrorMessage(error));
       return;
@@ -75,6 +87,11 @@ export function SignInPage() {
         </div>
 
         <FormError message={formError} />
+        {passwordReset && (
+          <FormNotice title="Password changed">
+            Every other phone and computer has been signed out. Sign in with your new password.
+          </FormNotice>
+        )}
 
         <FormField id="email" label="Email" error={errors.email?.message}>
           <Input
@@ -87,7 +104,16 @@ export function SignInPage() {
           />
         </FormField>
 
-        <FormField id="password" label="Password" error={errors.password?.message}>
+        <FormField
+          id="password"
+          label="Password"
+          error={errors.password?.message}
+          labelAside={
+            <Link to="/forgot-password" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
+              Forgot password?
+            </Link>
+          }
+        >
           <PasswordInput
             id="password"
             autoComplete="current-password"

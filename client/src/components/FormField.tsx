@@ -6,16 +6,21 @@ type Props = {
   label: string;
   hint?: string;
   error?: string;
+  /** Shown at the end of the label's line, e.g. a "Forgot password?" link. */
+  labelAside?: ReactNode;
   children: ReactNode;
 };
 
 /** Label above, control, then either the error (how to fix it) or a hint. */
-export function FormField({ id, label, hint, error, children }: Props) {
+export function FormField({ id, label, hint, error, labelAside, children }: Props) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id} className="text-sm font-semibold">
-        {label}
-      </Label>
+      <div className="flex items-baseline justify-between gap-3">
+        <Label htmlFor={id} className="text-sm font-semibold">
+          {label}
+        </Label>
+        {labelAside}
+      </div>
       {children}
       {error ? (
         <p id={`${id}-msg`} role="alert" className="text-[0.8125rem] text-critical">

@@ -2,9 +2,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
-import { Link, Navigate, useNavigate } from 'react-router';
+import { Link, Navigate } from 'react-router';
 import { z } from 'zod';
 import { AuthShell } from '@/components/AuthShell';
+import { CheckEmail } from '@/components/CheckEmail';
 import { FormError } from '@/components/FormError';
 import { FormField } from '@/components/FormField';
 import { PasswordInput } from '@/components/PasswordInput';
@@ -13,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { authErrorMessage } from '@/lib/auth-errors';
-import { signUp, useSession } from '@/lib/auth-client';
+import { CONFIRMED_URL, signUp, useSession } from '@/lib/auth-client';
 
 const SignUpSchema = z.object({
   name: z.string().trim().min(1, 'Enter your name.').max(80, 'Use 80 characters or fewer.'),
@@ -31,13 +32,15 @@ const STEPS = ['Create your account', 'Add your website and prove it’s yours',
 
 export function SignUpPage() {
   const { data: session } = useSession();
-  const navigate = useNavigate();
   const [formError, setFormError] = useState<string | null>(null);
+  // Set once the account is made: the page then asks the person to confirm their email.
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
   const {
     register,
     control,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<SignUpValues>({
     resolver: zodResolver(SignUpSchema),
@@ -55,12 +58,17 @@ export function SignUpPage() {
       password: values.password,
       // Checked again on the server: sign-up is refused without it.
       acceptTerms: values.acceptTerms,
+      callbackURL: CONFIRMED_URL,
     } as Parameters<typeof signUp.email>[0]);
+    if (error?.code === 'PASSWORD_LEAKED') {
+      setError('password', { message: authErrorMessage(error) }, { shouldFocus: true });
+      return;
+    }
     if (error) {
       setFormError(authErrorMessage(error));
       return;
     }
-    navigate('/home', { replace: true });
+    setSentTo(values.email);
   });
 
   return (
@@ -101,6 +109,9 @@ export function SignUpPage() {
       }
       points={['Free', 'No card needed', 'Results in seconds']}
     >
+      {sentTo ? (
+        <CheckEmail email={sentTo} onStartAgain={() => setSentTo(null)} />
+      ) : (
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
         <div className="flex flex-col gap-1.5">
           <h1 className="font-display text-[1.75rem] font-bold tracking-tight lg:text-[2.125rem]">Create your account</h1>
@@ -183,6 +194,7 @@ export function SignUpPage() {
           )}
         </Button>
       </form>
+      )}
     </AuthShell>
   );
 }
