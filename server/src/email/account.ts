@@ -68,3 +68,13 @@ export function alreadySignedUpEmail(name: string): AccountEmail {
     small: 'Wasn’t you? Nothing has changed and you can ignore this email.',
   });
 }
+
+/** The receipt after "Delete account". */
+export function accountDeletedEmail(name: string): AccountEmail {
+  return layout({
+    subject: 'Your Sentry account was deleted',
+    heading: `Goodbye, ${firstName(name)}`,
+    body: 'Your Sentry account has been deleted, along with all its websites, reports and automatic checks. Sentry won’t email you again.',
+    small: 'Didn’t do this? Someone knew your Sentry password: change it on any other website where you use the same one.',
+  });
+}

@@ -3,15 +3,11 @@ import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { db } from '../db/client.ts';
 import { domains } from '../db/schema.ts';
+import { isDemoAccount } from '../demo/account.ts';
 import { mainDomain, plantDemoWebsites } from '../demo/websites.ts';
 import { hasVerifyRecord, newVerifyToken } from '../domains/verify.ts';
 import { env } from '../env.ts';
 import { requireAuth } from '../middleware/require-auth.ts';
-
-/** True for the one account set up for presenting Sentry (DEMO_EMAIL). */
-export function isDemoAccount(email: string): boolean {
-  return !!env.DEMO_EMAIL && email.toLowerCase() === env.DEMO_EMAIL.toLowerCase();
-}
 
 /** "Reset demo" on the demo account's Account page. Every other account gets a plain 404. */
 export const demoRouter = Router();

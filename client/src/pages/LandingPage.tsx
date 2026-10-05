@@ -14,8 +14,9 @@ import { useEffect, type CSSProperties, type ReactNode } from 'react';
 import { Link, Navigate, useLocation } from 'react-router';
 import { ExampleReport } from '@/components/landing/ExampleReport';
 import { MonitorWave } from '@/components/MonitorWave';
+import { FormNotice } from '@/components/FormNotice';
 import { Button } from '@/components/ui/button';
-import { useSession } from '@/lib/auth-client';
+import { authClient, useSession } from '@/lib/auth-client';
 import { useScrollReveal } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
@@ -341,9 +342,19 @@ export function LandingPage() {
   const { hash, state } = useLocation();
   // Set by "Sign out": stay here while the session is being ended instead of bouncing to /home.
   const signingOut = (state as { signedOut?: boolean } | null)?.signedOut === true;
+  // Set by "Delete account" on the Account page.
+  const accountDeleted = (state as { accountDeleted?: boolean } | null)?.accountDeleted === true;
   const showLanding = !(!isPending && session && !signingOut);
 
   useScrollReveal([showLanding]);
+
+  // After "Delete account": the session ended on the server; now that the signed-in pages are
+  // gone, let the rest of the website see it too.
+  useEffect(() => {
+    if (!accountDeleted) return;
+    authClient.$store.notify('$sessionSignal');
+    window.scrollTo({ top: 0 });
+  }, [accountDeleted]);
 
   // Links like /#how from other pages: scroll to the section once it exists.
   useEffect(() => {
@@ -358,6 +369,13 @@ export function LandingPage() {
     // tinted sections are slightly see-through so the trace shows faintly behind them.
     <div className="relative overflow-x-clip [&>section]:relative [&>section]:z-[1]">
       <MonitorWave />
+      {accountDeleted && (
+        <Container className="relative z-[1] pt-6">
+          <FormNotice title="Your account has been deleted">
+            Along with all its websites and reports. Thank you for trying Sentry.
+          </FormNotice>
+        </Container>
+      )}
       <Hero />
       <PlainEnglish />
       <HowItWorks />

@@ -2,13 +2,25 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { DeleteAccount } from '@/components/account/DeleteAccount';
+import { SignInSecurity } from '@/components/account/SignInSecurity';
+import { YourData } from '@/components/account/YourData';
 import { FormError } from '@/components/FormError';
 import { Button } from '@/components/ui/button';
 import { useDomains } from '@/lib/domains';
 
 type Me = {
-  user: { id: string; name: string; email: string; createdAt: string; termsAcceptedAt: string | null };
-  /** The account set up for presenting Sentry: it gets "Reset demo". */
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    emailVerified: boolean;
+    createdAt: string;
+    termsAcceptedAt: string | null;
+  };
+  /** What "Delete account" would remove. */
+  counts: { websites: number; reports: number };
+  /** The account set up for presenting Sentry: it gets "Reset demo", and can't be deleted. */
   isDemo: boolean;
 };
 
@@ -44,7 +56,20 @@ export function AccountPage() {
           {(
             [
               ['Name', data?.user.name],
-              ['Email', data?.user.email],
+              [
+                'Email',
+                data && (
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="truncate">{data.user.email}</span>
+                    {data.user.emailVerified && (
+                      <span className="flex shrink-0 items-center gap-1 text-xs font-bold text-pass">
+                        <Check className="size-3.5" strokeWidth={3} aria-hidden="true" />
+                        Confirmed
+                      </span>
+                    )}
+                  </span>
+                ),
+              ],
               ['Member since', data && formatDate(data.user.createdAt)],
               [
                 'Scanning agreement',
@@ -67,6 +92,12 @@ export function AccountPage() {
       <WebsitesSummary />
 
       {data?.isDemo && <ResetDemo />}
+
+      <SignInSecurity />
+
+      <YourData />
+
+      {data && !data.isDemo && <DeleteAccount counts={data.counts} />}
     </div>
   );
 }

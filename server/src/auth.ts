@@ -3,7 +3,14 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { db } from './db/client.ts';
 import { account, session, user, verification } from './db/schema.ts';
-import { alreadySignedUpEmail, confirmEmail, passwordChangedEmail, resetPasswordEmail } from './email/account.ts';
+import { isDemoAccount } from './demo/account.ts';
+import {
+  accountDeletedEmail,
+  alreadySignedUpEmail,
+  confirmEmail,
+  passwordChangedEmail,
+  resetPasswordEmail,
+} from './email/account.ts';
 import { sendEmail } from './email/mailer.ts';
 import { env } from './env.ts';
 import { isLeakedPassword } from './leaked-password.ts';
@@ -71,6 +78,19 @@ export const auth = betterAuth({
     additionalFields: {
       termsAcceptedAt: { type: 'date', required: false, input: false },
     },
+    // "Delete account" on the Account page: everything goes at once (websites, checks and
+    // sessions are deleted with the user by the database). Always needs the password (see hooks).
+    deleteUser: {
+      enabled: true,
+      beforeDelete: async (user) => {
+        if (isDemoAccount(user.email)) {
+          throw new APIError('FORBIDDEN', { message: 'The demo account can’t be deleted.' });
+        }
+      },
+      afterDelete: async (user) => {
+        void sendEmail({ to: user.email, ...accountDeletedEmail(user.name) });
+      },
+    },
   },
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
@@ -92,6 +112,7 @@ export const auth = betterAuth({
       '/request-password-reset': { window: HOUR, max: 5 },
       '/reset-password': { window: 60, max: 5 },
       '/change-password': { window: 60, max: 5 },
+      '/delete-user': { window: 60, max: 5 },
     },
   },
   hooks: {
@@ -102,12 +123,23 @@ export const auth = betterAuth({
           message: 'Please confirm you will only scan websites you own or have permission to test.',
         });
       }
+      // Deleting the account always asks for the password, even right after signing in.
+      if (ctx.path === '/delete-user' && !(typeof ctx.body?.password === 'string' && ctx.body.password.length > 0)) {
+        throw new APIError('BAD_REQUEST', { message: 'Type your password to confirm.', code: 'PASSWORD_REQUIRED' });
+      }
       // No password known from a data breach, wherever a password is chosen.
       const field = NEW_PASSWORD_FIELD[ctx.path];
       const password = field ? ctx.body?.[field] : undefined;
       if (typeof password === 'string' && password.length >= 12 && (await isLeakedPassword(password))) {
         throw new APIError('BAD_REQUEST', { message: LEAKED_PASSWORD_MESSAGE, code: 'PASSWORD_LEAKED' });
       }
+    }),
+    // "Your password was changed" after Account → Change password, so a stranger can't do it
+    // quietly. (A reset from the email link sends it from onPasswordReset above.)
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== '/change-password' || ctx.context.returned instanceof Error) return;
+      const changed = ctx.context.session?.user;
+      if (changed) void sendEmail({ to: changed.email, ...passwordChangedEmail(changed.name) });
     }),
   },
   databaseHooks: {

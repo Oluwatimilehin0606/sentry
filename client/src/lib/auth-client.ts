@@ -6,7 +6,17 @@ export const authClient = createAuthClient({
   basePath: '/api/auth',
 });
 
-export const { useSession, signIn, signUp, signOut, sendVerificationEmail, requestPasswordReset, resetPassword } = authClient;
+export const {
+  useSession,
+  signIn,
+  signUp,
+  signOut,
+  sendVerificationEmail,
+  requestPasswordReset,
+  resetPassword,
+  changePassword,
+  revokeOtherSessions,
+} = authClient;
 
 /**
  * Where the "confirm your email" link lands. Confirmed: the person is signed in, and sign-in sends

@@ -48,7 +48,9 @@ export function SignInPage() {
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     // Not confirmed yet: Better Auth sends a fresh link, which lands back here.
-    const { error } = await signIn.email({ ...values, callbackURL: CONFIRMED_URL });
+    // The library goes to callbackURL after signing in, and the confirm link (if one is sent) does
+    // too: both come back here and carry on to where the person was going.
+    const { error } = await signIn.email({ ...values, callbackURL: `${CONFIRMED_URL}&next=${encodeURIComponent(next)}` });
     if (error?.code === 'EMAIL_NOT_VERIFIED') {
       setFormError(`Please confirm your email first. We’ve sent a new link to ${values.email}.`);
       return;
