@@ -26,6 +26,7 @@ Have these open in browser tabs, in this order, before you start (see the checkl
 | 1:00 | **Websites** → **demo.csentinel.com.ng**. Point at the chart. | "Meet Mama Adunni's Bakery, a pretend business we set up. Sentry has checked it every week: an A for five weeks. Automatic checks are on, and so are email alerts." |
 | 1:40 | Click **Run it now**. Wait for **A → F**. | "Yesterday her web developer pushed an update. Sentry's weekly check is due; let's run it now." The grade drops to **F**. |
 | 2:10 | **See the report.** Open the top problem. | Read the plain-English title: **"Your private settings file is public."** Then *why it matters* and *how to fix it*. "No jargon. And the technical detail is in a separate box for her developer." |
+| *(+0:20, optional)* | Click **Download PDF**; open the file. | "And she can download all of this as a report to hand to her developer, or her boss." Show the cover: grade, the three fixes to do first. |
 | 3:00 | Tab C: show the exposed file. | "This is what anyone on the internet can download right now: her database password, her payment key. These ones are fake; on a real site they wouldn't be." |
 | 3:30 | Tab B: the Proton inbox. Open the alert. | "And Mama Adunni didn't have to be watching. Sentry emailed her: *dropped from an A to an F*, what's new, and a button to the report." |
 | 4:10 | Back to tab A. | "One grade. Plain English. The first fix to make. And a watchman that never sleeps. That's Sentry." |
