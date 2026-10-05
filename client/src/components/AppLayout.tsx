@@ -55,6 +55,23 @@ export function AppLayout() {
           </div>
           <AccountMenu />
         </div>
+        {/* Phones: the sections as a row of tabs under the logo, so they're always one tap away. */}
+        <nav aria-label="App" className="grid grid-cols-3 gap-1 px-3 pb-2 text-[0.9375rem] font-semibold md:hidden">
+          {NAV.filter((item) => item.to).map(({ to, label }) => (
+            <NavLink
+              key={label}
+              to={to!}
+              className={({ isActive }) =>
+                cn(
+                  'grid h-10 place-items-center rounded-[9px] transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
+                  isActive ? 'bg-primary-soft text-primary' : 'text-muted-foreground hover:text-foreground',
+                )
+              }
+            >
+              {label}
+            </NavLink>
+          ))}
+        </nav>
       </header>
 
       <main className="flex flex-1 flex-col">

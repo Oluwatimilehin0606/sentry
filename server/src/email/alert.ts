@@ -65,13 +65,16 @@ export function alertEmail(a: AlertInput): { subject: string; text: string; html
     )
     .join('');
 
+  // The logo is a small picture on Sentry's own site (many email apps don't show SVG), from the
+  // same address as the report link. Picture blocked: "Sentry" still shows beside it.
+  const logoUrl = new URL('/email-logo.png', a.reportUrl).href;
   const html = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${esc(subject)}</title></head>
 <body style="margin:0;background:#F5F7FA;font-family:'Public Sans',Segoe UI,Arial,sans-serif;color:#111A2B">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5F7FA"><tr><td align="center" style="padding:32px 16px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px">
-<tr><td style="padding:0 0 20px;font-size:20px;font-weight:700">
-  <span style="display:inline-block;width:28px;height:28px;border-radius:7px;background:#1F5FAD;vertical-align:middle"></span>&nbsp; Sentry
+<tr><td style="padding:0 0 20px;font-size:21px;font-weight:700">
+  <img src="${esc(logoUrl)}" width="32" height="32" alt="" style="display:inline-block;width:32px;height:32px;border:0;border-radius:8px;vertical-align:middle">&nbsp; Sentry
 </td></tr>
 <tr><td style="padding:0 0 16px;font-size:26px;line-height:1.2;font-weight:700">${esc(heading)}</td></tr>
 <tr><td style="padding:16px 18px;background:#FFFFFF;border:1px solid #D9E0EA;border-radius:12px">

@@ -12,71 +12,53 @@ SMEs are prime targets for opportunistic cyberattacks (phishing, ransomware, cre
 
 > There is no low-cost, low-friction tool that tells a non-technical business owner, in plain language: *"Here's your risk level, here's why it matters, and here's what to fix first."*
 
-## Current Status (28 Sep 2026)
+## Current Status (5 Oct 2026)
 
-**Phase 0 (27 Sep 2026): working local prototype**, plus an early preview of the scanner.
+**Live at [csentinel.com.ng](https://csentinel.com.ng).** All the planned features up to scheduled re-checks and email alerts are built, tested and online. What's left before the final presentation on 17 October is polish and demo preparation (see [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), Phase 8).
 
-What works today, at http://localhost:5173 after `npm run dev`:
+What a business owner can do today:
 
-- Enter a domain and get a **real security check** in about a second: HTTPS availability, certificate validity and expiry, HTTP→HTTPS redirect, and six security headers (HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, server version leaks).
-- A **score out of 100 and an A–F grade**, with every problem explained in plain English: what it is, why it matters, and how to fix it.
-- **Safety built in:** Sentry refuses to scan private or internal addresses, checks every connection (not just the first lookup), never downloads page content, and rate-limits scans.
-- Light and dark themes.
+- **Sign up** and check any website for free. The **light check** looks at the connection, the certificate and the browser protections; anyone can run it on any site.
+- **Prove a website is theirs** by adding one DNS record, which unlocks the **full check**: it also looks for private files left public (settings files, `.git` folders, backups, debug and database-admin pages) and old encryption.
+- Get **one grade (A–F) and a score out of 100**, with every problem explained in plain English: what it is, why it matters, how to fix it, and a "For your developer" box with the technical detail. The summary names the single fix that raises the grade most.
+- See each website's **score over time** and **what changed since the last check** (new and fixed problems).
+- Turn on **automatic weekly or monthly checks**, and get an **email alert** when a website gets worse. "Run it now" runs the automatic check straight away.
 
-**Phase 1 (28 Sep 2026): accounts.**
+Built to be safe and private:
 
-- PostgreSQL 18 + Drizzle ORM with migrations; tables for users, sessions, domains, scans and findings.
-- **Sign up, sign in and sign out** with Better Auth: 12+ character passwords stored as scrypt hashes, sessions in httpOnly cookies, login rate limiting, and a required "I will only scan websites I own" agreement recorded with the account.
-- Protected pages and API routes (`/account`, `/api/me`), with sign-in redirecting back to where you were going.
-- 47 automated tests, run against a separate test database.
-
-**Landing page (28 Sep 2026).**
-
-- Public landing page at `/`: hero with an example report, a "plain English, not jargon" comparison, how it works, what Sentry checks, safety, and a final call to action. Anyone can read it.
-- Checking a website needs an account: the scanner lives at `/home` (signed in only), sign-up and sign-in land there, and the API refuses scans from signed-out visitors.
-- Lighthouse on the production build: desktop 100 / 100 / 100 / 100; phone 100 for accessibility, best practices and SEO, and 86–98 for performance.
-- Self-hosted fonts (no Google Fonts requests), pages load on demand, `robots.txt`, link-preview tags.
-- Motion: the example report plays out like a live scan (checks tick off, score counts up to 72, grade and findings appear, "Run again" to replay); sections fade up on scroll; "How it works" draws a line through steps 1 → 2 → 3; a before → after reveal for the plain-English comparison; subtle hover effects; a faint heart-monitor wave behind the content that sweeps across the screen continuously, like a hospital monitor. No animation library, and anyone with "reduce motion" switched on gets the static page.
-
-**Brand, sign-in and home redesign (29 Sep 2026).**
-
-- New logo: a shield with a heartbeat drawn as an "S" (security, monitoring, and the S in Sentry).
-- Sign-in and sign-up are a split screen: a deep-blue brand panel with a live heart-monitor trace, and a focused form; sign-up adds a password-strength meter. On phones the panel becomes a compact band.
-- The signed-in home is a dashboard: greeting and a large check bar, recent checks (kept in the browser until scans are saved in Phase 5), the latest report, "Your next step" (the fix that raises the grade most), "Your websites" (coming soon) and how grades work. New account menu with theme and sign out.
-
-**Next up (see [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)):**
-
-1. **Phase 2:** complete the scanner: exposed-file checks (`.env`, `.git`, backups) and TLS protocol checks.
-2. **Phases 3–5:** domain ownership verification, saved reports, then the dashboard, scheduled re-scans and email alerts.
+- Sentry only ever connects to public internet addresses (never private networks or cloud metadata), checking every connection, not just the first lookup. Full checks only run on websites the account has proved it owns.
+- Passwords are stored as scrypt hashes, sessions live in httpOnly cookies, sign-in attempts and checks are rate-limited per person, and every change must come from Sentry's own pages.
+- Strict security headers on Sentry itself, including a Content-Security-Policy with no inline scripts; it checks itself to an **A**.
+- About 180 automated tests, plus a browser test that walks the whole journey in Chrome against a deliberately weak pretend website.
 
 ## Features
 
 | Feature | Description |
 |---|---|
-| Domain input & scan | Scan SSL/TLS config, HTTP security headers, and common exposed paths (`.env`, `.git`, `/admin`, etc.) |
-| Plain-English report | Each finding explained as what it is, why it matters, and how to fix it — no jargon, no CVE codes |
-| Composite risk score | Single score (A–F grade / 0–100) summarizing overall cyber health |
-| User accounts | Sign up / log in with scan history tied to the account |
-| Dashboard | List of past scans per domain, score trend over time |
-| Scheduled re-scans | Automatic weekly/monthly re-checks with score-drop alerts |
+| Light and full checks | HTTPS and certificate, redirect, six browser protections, server version leaks; plus (proven websites) old TLS versions and exposed private files |
+| Plain-English report | Each finding explained as what it is, why it matters, and how to fix it, with technical evidence kept in a separate box for developers |
+| Grade and score | One A–F grade and a 0–100 score; any critical problem caps the grade at D |
+| Ownership proof | A DNS TXT record; proving a domain also covers its subdomains |
+| History | Every check saved; score-over-time chart and "since your last check" changes for each website |
+| Automatic checks and alerts | Weekly or monthly checks, an email when the grade drops or a new serious problem appears, and "Run it now" |
 
 ## Tech Stack
 
-All free and open source, and runs locally with no cloud accounts or API keys.
+All free and open source; online it runs on free plans.
 
-- **Language:** TypeScript (client and server)
+- **Language:** TypeScript (client and server), run directly by Node.js 24
 - **Frontend:** React 19 + Vite, React Router, TanStack Query, React Hook Form + zod
-- **UI:** Tailwind CSS v4 + shadcn/ui, lucide-react icons, Recharts
-- **Backend:** Node.js 24 + Express 5, zod, helmet, pino
-- **Database:** PostgreSQL 18 with Drizzle ORM — users, domains, scan history, findings
-- **Auth:** Better Auth (self-hosted) — email + password, database-backed sessions in httpOnly cookies
-- **Background jobs:** pg-boss (Postgres-backed queue) for scans and scheduled re-scans
-- **Scanning:** Node's built-in `tls`, `dns` and `fetch` — SSL/TLS checks, HTTP security headers (CSP, HSTS, X-Frame-Options, etc.), and a rate-limited curated wordlist probe for exposed paths
-- **Email:** Nodemailer + React Email, caught locally by Mailpit
-- **PDF export:** @react-pdf/renderer
+- **UI:** Tailwind CSS v4 + shadcn/ui, lucide-react icons; the score chart is hand-built SVG
+- **Backend:** Express 5, zod, helmet, pino; the website and API are one program on one address
+- **Database:** PostgreSQL 18 with Drizzle ORM and migrations
+- **Auth:** Better Auth (self-hosted): email and password, database-backed sessions in httpOnly cookies
+- **Automatic checks:** a small scheduler inside the server; one database statement claims due websites, so two copies never check the same website twice
+- **Scanning:** Node's built-in `tls`, `dns`, `http` and `https`
+- **Email:** Nodemailer over SMTP: Resend online, the MailDev test inbox on this machine
 - **Testing:** Vitest, Supertest, Playwright
+- **Online:** Render (Sentry), Neon (database), Resend (email), Cloudflare (DNS)
 
-See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the full stack rationale and phased build plan.
+See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the phased build plan, with a status note on every phase.
 
 ## Design
 

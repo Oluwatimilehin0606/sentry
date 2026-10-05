@@ -1,4 +1,4 @@
-import { ChevronDown, FileText, Globe, House, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
+import { ChevronDown, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
@@ -44,25 +44,6 @@ export function AccountMenu() {
           <span className="truncate text-xs font-normal text-muted-foreground">{email}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {/* On phones the header has no room for the app menu, so its links live here. */}
-        <DropdownMenuItem asChild className="md:hidden">
-          <Link to="/home">
-            <House aria-hidden="true" />
-            Home
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild className="md:hidden">
-          <Link to="/websites">
-            <Globe aria-hidden="true" />
-            Websites
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild className="md:hidden">
-          <Link to="/reports">
-            <FileText aria-hidden="true" />
-            Reports
-          </Link>
-        </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link to="/account">
             <UserRound aria-hidden="true" />

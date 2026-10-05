@@ -173,7 +173,8 @@ export function ExampleReport() {
         )}
 
         <p {...appear(0)} className={cn(appear(0).className, 'text-[0.9375rem] sm:text-base')}>
-          Your site scored a C. 4 issues are putting you at risk. Fix the medium ones first.
+          Your site scored a C. 4 issues are putting you at risk. Start with “Browsers aren’t told to always use a
+          secure connection”.
         </p>
         <div {...appear(120)} className={cn(appear(120).className, 'flex flex-wrap gap-2')}>
           <Pill className="bg-medium-soft text-medium">2 medium</Pill>

@@ -186,4 +186,18 @@ describe('alert email', () => {
     expect(email.text).toContain('B → D (82 → 62 out of 100), checked Thu 8 Oct, 14:03 GMT+1.');
     expect(email.text).toContain('- [Medium] Browsers aren’t told to always use a secure connection');
   });
+
+  it('shows the logo as a picture from Sentry’s own site', () => {
+    const email = alertEmail({
+      hostname: 'yourbakery.example',
+      interval: 'weekly',
+      previous: { grade: 'A', score: 96 },
+      current: { grade: 'F', score: 28, scannedAt: '2026-10-08T13:03:00Z' },
+      appeared: [],
+      reportUrl: 'https://csentinel.com.ng/reports/abc',
+      settingsUrl: 'https://csentinel.com.ng/websites/x?alerts=off',
+      timeZone: 'Africa/Lagos',
+    });
+    expect(email.html).toContain('<img src="https://csentinel.com.ng/email-logo.png"');
+  });
 });
