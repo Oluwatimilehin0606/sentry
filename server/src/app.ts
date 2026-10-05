@@ -203,7 +203,18 @@ function serveWebsite(app: express.Express, folder: string) {
     '/assets',
     express.static(path.join(folder, 'assets'), { immutable: true, maxAge: '1y', dotfiles: 'allow', fallthrough: false }),
   );
-  app.use(express.static(folder, { index: false, maxAge: '1h', dotfiles: 'allow' }));
+  app.use(
+    express.static(folder, {
+      index: false,
+      maxAge: '1h',
+      dotfiles: 'allow',
+      // The installed app's service worker and manifest are always re-checked, so a new version of
+      // Sentry reaches installed apps the next time they open.
+      setHeaders: (res, file) => {
+        if (/(sw\.js|manifest\.webmanifest|offline\.html)$/.test(file)) res.set('cache-control', 'no-cache');
+      },
+    }),
+  );
   app.get('/{*page}', (_req, res) => {
     res.set('cache-control', 'no-cache');
     res.sendFile(path.join(folder, 'index.html'), { dotfiles: 'allow' });

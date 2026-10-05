@@ -28,6 +28,11 @@ export default tseslint.config(
     },
   },
   {
+    // The installed app's service worker runs in its own browser context, not a page.
+    files: ['client/public/sw.js'],
+    languageOptions: { globals: globals.serviceworker },
+  },
+  {
     files: ['client/src/components/ui/**'],
     rules: { 'react-refresh/only-export-components': 'off' },
   },

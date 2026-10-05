@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f7fa" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>You’re offline · Sentry</title>
+    <!-- Shown by the installed app (sw.js) when there's no internet. No scripts: Sentry's security
+         policy allows none inline, and "Try again" is a plain link. -->
+    <style>
+      :root { color-scheme: light dark; --bg: #f5f7fa; --text: #111a2b; --muted: #56637a; --primary: #1f5fad; --soft: #e3edf9; }
+      @media (prefers-color-scheme: dark) {
+        :root { --bg: #0b111c; --text: #e6ebf3; --muted: #9eaabd; --primary: #6ea2ee; --soft: #16294a; }
+      }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--text);
+        font-family: 'Public Sans', 'Segoe UI', system-ui, -apple-system, sans-serif; line-height: 1.55; }
+      main { max-width: 420px; padding: 32px 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+      .icon { width: 48px; height: 48px; border-radius: 12px; background: var(--soft); display: grid; place-items: center; }
+      h1 { margin: 0; font-size: 1.75rem; line-height: 1.15; letter-spacing: -0.015em; }
+      p { margin: 0; color: var(--muted); }
+      a { display: inline-flex; align-items: center; height: 44px; padding: 0 20px; border-radius: 8px; background: var(--primary);
+        color: #fff; font-weight: 600; text-decoration: none; }
+      @media (prefers-color-scheme: dark) { a { color: #0b111c; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="icon" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary)">
+          <path d="M2 2l20 20" />
+          <path d="M8.5 16.5a5 5 0 0 1 7 0M5 13a10 10 0 0 1 5.2-2.8M19 13a10 10 0 0 0-2.1-1.6M2 8.8a15 15 0 0 1 4.2-2.7M22 8.8A15 15 0 0 0 10.7 5M12 20h.01" />
+        </svg>
+      </span>
+      <h1>You’re offline</h1>
+      <p>Sentry needs the internet to check websites and show your reports. Connect, then try again.</p>
+      <a href="/home">Try again</a>
+    </main>
+  </body>
+</html>

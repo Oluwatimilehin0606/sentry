@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from '@/App';
+import { registerServiceWorker, startInstallWatch } from '@/lib/install';
 import { applyTheme, getThemeChoice, watchSystemTheme } from '@/lib/theme';
 // Self-hosted fonts (no Google Fonts request): faster first paint and no third-party tracking.
 import '@fontsource-variable/bricolage-grotesque/opsz.css';
@@ -12,6 +13,8 @@ import './index.css';
 
 applyTheme(getThemeChoice());
 watchSystemTheme();
+startInstallWatch();
+registerServiceWorker();
 
 const queryClient = new QueryClient();
 

@@ -14,6 +14,8 @@ beforeAll(() => {
   fs.writeFileSync(path.join(website, 'index.html'), '<!doctype html><title>Sentry</title>');
   fs.mkdirSync(path.join(website, 'assets'));
   fs.writeFileSync(path.join(website, 'assets', 'index-abc123.js'), 'console.log(1)');
+  fs.writeFileSync(path.join(website, 'sw.js'), '// service worker');
+  fs.writeFileSync(path.join(website, 'manifest.webmanifest'), '{"name":"Sentry"}');
 });
 
 afterAll(async () => {
@@ -36,6 +38,17 @@ describe('one port: the API also serves the built website', () => {
 
     expect(res.status).toBe(200);
     expect(res.headers['cache-control']).toContain('immutable');
+  });
+
+  it('always re-checks the installed app’s service worker and manifest, so updates reach it', async () => {
+    const app = createApp({ website });
+    const worker = await request(app).get('/sw.js');
+    const manifest = await request(app).get('/manifest.webmanifest');
+
+    expect(worker.headers['cache-control']).toBe('no-cache');
+    expect(worker.headers['content-type']).toMatch(/javascript/);
+    expect(manifest.headers['cache-control']).toBe('no-cache');
+    expect(manifest.headers['content-type']).toMatch(/manifest\+json/);
   });
 
   it('answers a missing built file with 404, not the page', async () => {
