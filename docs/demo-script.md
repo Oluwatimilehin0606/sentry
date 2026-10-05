@@ -45,8 +45,8 @@ Have these open in browser tabs, in this order, before you start (see the checkl
 - [ ] Keep one rehearsal alert email in the Proton inbox.
 
 **One hour before**
-- [ ] Reset the demo: in the Sentry folder run `npm run db:seed -- --online` (the demo website gets its A history back).
 - [ ] Open https://csentinel.com.ng to wake the server, and sign in as the demo account (password in `.env.online`; close that file without saving).
+- [ ] Reset the demo: **Account → Reset demo → Yes, reset** (the demo website gets its A history back). Do this after every rehearsal too.
 - [ ] Open tabs A, B and C (above). Don't press **Run it now** until the demo.
 - [ ] Laptop charged, notifications off, browser zoom about 125% so the back row can read it.
 - [ ] Phone hotspot ready in case the venue Wi-Fi fails; the backup recording on the laptop itself, not only online.

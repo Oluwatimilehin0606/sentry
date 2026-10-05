@@ -7,6 +7,7 @@ import { auth, CLIENT_IP_HEADER } from './auth.ts';
 import { demoSite } from './demo-site.ts';
 import { env } from './env.ts';
 import { logger } from './logger.ts';
+import { demoRouter } from './routes/demo.ts';
 import { domainsRouter } from './routes/domains.ts';
 import { healthRouter } from './routes/health.ts';
 import { meRouter } from './routes/me.ts';
@@ -136,6 +137,7 @@ export function createApp({
   app.use('/api/domains', domainsRouter);
   app.use('/api/scan', scanRouter);
   app.use('/api/scans', scansRouter);
+  app.use('/api/demo', demoRouter);
 
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });

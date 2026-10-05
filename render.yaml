@@ -45,3 +45,6 @@ services:
       # The deliberately weak demo website, e.g. demo.yourdomain.com.ng
       - key: DEMO_SITE_HOST
         sync: false
+      # The demo account's email: only that account gets "Reset demo" on its Account page.
+      - key: DEMO_EMAIL
+        sync: false

@@ -150,6 +150,7 @@ Everything runs on free plans: **Render** runs Sentry (website and API together)
    - `SMTP_URL`: `smtps://resend:<Resend API key>@smtp.resend.com:2465` (port 2465: Render's free plan blocks the usual email ports)
    - `MAIL_FROM`: `Sentry <alerts@<your domain>>` once the domain is verified in Resend (until then, `Sentry <onboarding@resend.dev>`, which only reaches the Resend account's own address)
    - `DEMO_SITE_HOST`: `demo.<your domain>`, the deliberately weak website for the demo, served by Sentry itself
+   - `DEMO_EMAIL`: the demo account's email. That account gets **Reset demo** on its Account page, which puts the demo websites back to their starting history without the command line
 4. **Addresses:** in Render, add both `sentry.<your domain>` and `demo.<your domain>` as custom domains. In Cloudflare, add the two CNAME records Render shows, with the cloud icon set to **DNS only** (grey), so Render can issue the HTTPS certificates.
 5. **Email from your domain (Resend):** add the domain in Resend and the records it shows to Cloudflare. Then alerts can go to any address.
 6. **Demo account:** create `.env.online` on your computer (never committed) with the Neon `DATABASE_URL`, `DEMO_SITE_HOST` and `DEMO_EMAIL`, then run `npm run db:seed -- --online`. The demo website gets five weeks of A grades, so "Run it now" on demo day shows "A → F". The password is saved in `.env.online`.

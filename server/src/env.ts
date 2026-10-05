@@ -17,6 +17,14 @@ const EnvSchema = z.object({
     .regex(/^[a-z0-9.-]+$/i, 'must be a hostname like demo.yourdomain.com.ng')
     .optional()
     .or(z.literal('').transform(() => undefined)),
+  // The demo account's email: only that account sees "Reset demo" on its Account page.
+  DEMO_EMAIL: z
+    .string()
+    .email()
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  // The demo website's ownership proof, used only if "Reset demo" finds no demo website to copy it from.
+  DEMO_VERIFY_TOKEN: z.string().optional(),
   DATABASE_URL: z
     .string({ error: 'is not set. Copy .env.example to .env and fill it in.' })
     .regex(/^postgres(ql)?:\/\//, 'must start with postgres://'),
