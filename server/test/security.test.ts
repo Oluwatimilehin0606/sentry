@@ -22,6 +22,19 @@ describe('Sentry’s own security headers', () => {
     // Sentry runs on plain http on this machine, so nothing may be forced to https yet.
     expect(csp).not.toContain('upgrade-insecure-requests');
   });
+
+  it('turns off the camera, microphone and location for every page', async () => {
+    const res = await request(createApp()).get('/api/health');
+    expect(res.headers['permissions-policy']).toContain('camera=()');
+    expect(res.headers['permissions-policy']).toContain('geolocation=()');
+  });
+
+  it('tells browsers not to keep a copy of any API answer', async () => {
+    const app = createApp();
+    expect((await request(app).get('/api/health')).headers['cache-control']).toBe('no-store');
+    expect((await request(app).get('/api/me')).headers['cache-control']).toBe('no-store');
+    expect((await request(app).get('/api/auth/get-session')).headers['cache-control']).toContain('no-store');
+  });
 });
 
 describe('the visitor address used for sign-in limits', () => {

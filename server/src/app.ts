@@ -82,6 +82,11 @@ export function createApp({
       strictTransportSecurity: https,
     }),
   );
+  // Sentry never uses the camera, microphone, location or payments, so no page of it may ask.
+  app.use((_req, res, next) => {
+    res.set('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+    next();
+  });
   app.use(
     pinoHttp({
       logger,
@@ -113,6 +118,13 @@ export function createApp({
   // (trust proxy), the address that proxy saw, which a visitor can't fake.
   app.use((req, _res, next) => {
     req.headers[CLIENT_IP_HEADER] = req.ip ?? '';
+    next();
+  });
+
+  // API answers are about one signed-in person (their account, websites, reports), so browsers
+  // and any proxy on the way must not keep a copy, e.g. on a shared computer after signing out.
+  app.use('/api', (_req, res, next) => {
+    res.set('cache-control', 'no-store');
     next();
   });
 
