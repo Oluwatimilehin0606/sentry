@@ -1,4 +1,5 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import type { Grade, ScanReport } from '@/lib/scan';
 
 /** One saved check, as listed on the Reports page. */
@@ -32,6 +33,48 @@ async function get<T>(path: string): Promise<T> {
 }
 
 const PAGE = 20;
+
+/**
+ * "Download PDF": fetches the report's PDF and saves it under the name the server gives it
+ * (e.g. sentry-demo.csentinel.com.ng-2026-10-05.pdf).
+ */
+export function usePdfDownload() {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function start(id: string) {
+    setPending(true);
+    setError(null);
+    try {
+      let res: Response;
+      try {
+        res = await fetch(`/api/scans/${id}/pdf`);
+      } catch {
+        throw new ReportError('We couldn’t reach the Sentry server. Check it’s running and try again.');
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new ReportError(body?.error ?? 'We couldn’t make the PDF. Please try again.');
+      }
+      const name = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? 'sentry-report.pdf';
+      const url = URL.createObjectURL(await res.blob());
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = name;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      // Give the browser a moment to start the download before letting go of the file.
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch (err) {
+      setError(err instanceof ReportError ? err.message : 'We couldn’t make the PDF. Please try again.');
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return { start, pending, error };
+}
 
 /** The Reports list, newest first, optionally for one website; loads older checks on demand. */
 export function useScanList(hostname?: string) {

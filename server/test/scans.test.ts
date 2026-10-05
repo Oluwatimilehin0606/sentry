@@ -129,6 +129,30 @@ describe('changes since the last check', () => {
   });
 });
 
+describe('PDF download', () => {
+  /** Collects a binary response body into a Buffer. */
+  const binary = (res: NodeJS.ReadableStream, done: (err: Error | null, body: Buffer) => void) => {
+    const chunks: Buffer[] = [];
+    res.on('data', (chunk: Buffer) => chunks.push(chunk));
+    res.on('end', () => done(null, Buffer.concat(chunks)));
+  };
+
+  it.each(['full', 'light'] as const)('downloads a %s check as a named PDF', async (mode) => {
+    const id = await saveScan(ownerId, fakeReport('pdf.yourbakery.example', MIXED, '2026-10-05T09:16:00.000Z', mode));
+    const res = await owner.get(`/api/scans/${id}/pdf`).buffer(true).parse(binary as never);
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('application/pdf');
+    expect(res.headers['content-disposition']).toBe('attachment; filename="sentry-pdf.yourbakery.example-2026-10-05.pdf"');
+    expect((res.body as Buffer).subarray(0, 5).toString()).toBe('%PDF-');
+  });
+
+  it('keeps other people’s reports hidden', async () => {
+    const id = await saveScan(ownerId, fakeReport('pdf.yourbakery.example', MIXED, '2026-10-05T09:20:00.000Z'));
+    expect((await stranger.get(`/api/scans/${id}/pdf`)).status).toBe(404);
+  });
+});
+
 describe('daily limit', () => {
   it(`stops new checks after ${DAILY_LIMIT} in 24 hours, before any scanning starts`, async () => {
     const [row] = await db.select().from(user).where(eq(user.email, 'stranger@elsewhere.example'));

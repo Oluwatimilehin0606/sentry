@@ -1,5 +1,8 @@
 import { Router } from 'express';
+import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
+import { env } from '../env.ts';
+import { pdfFileName, reportPdf } from '../reports/pdf.ts';
 import { requireAuth } from '../middleware/require-auth.ts';
 import { normalizeHostname } from '../scanner/domain.ts';
 import { getScan, listScans } from '../scans/store.ts';
@@ -36,6 +39,36 @@ scansRouter.get('/', async (req, res) => {
 });
 
 const Id = z.uuid();
+
+/** A saved report as a PDF download ("Download PDF" on the report's page). */
+scansRouter.get(
+  '/:id/pdf',
+  rateLimit({
+    windowMs: 60_000,
+    limit: 10,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    keyGenerator: (_req, res) => `pdf:${res.locals.user!.id}`,
+    message: { error: 'That’s a lot of downloads in a short time. Please wait a minute and try again.' },
+  }),
+  async (req, res) => {
+    const id = String(req.params.id);
+    const report = Id.safeParse(id).success ? await getScan(res.locals.user!.id, id) : null;
+    if (!report) {
+      res.status(404).json({ error: 'We couldn’t find that report in your account.' });
+      return;
+    }
+    const pdf = await reportPdf(report, { timeZone: env.APP_TIMEZONE });
+    res
+      .status(200)
+      .set({
+        'content-type': 'application/pdf',
+        'content-disposition': `attachment; filename="${pdfFileName(report, env.APP_TIMEZONE)}"`,
+        'cache-control': 'private, no-store',
+      })
+      .send(pdf);
+  },
+);
 
 scansRouter.get('/:id', async (req, res) => {
   const report = Id.safeParse(req.params.id).success ? await getScan(res.locals.user!.id, req.params.id) : null;

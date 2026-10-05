@@ -1,9 +1,9 @@
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Loader2 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { FormError } from '@/components/FormError';
 import { ScanReport } from '@/components/ScanReport';
 import { Button } from '@/components/ui/button';
-import { useSavedReport } from '@/lib/reports';
+import { usePdfDownload, useSavedReport } from '@/lib/reports';
 
 const dateTime = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
@@ -13,11 +13,12 @@ const dateTime = new Intl.DateTimeFormat('en-GB', {
   minute: '2-digit',
 });
 
-/** One saved report on its own page, with "Check again". */
+/** One saved report on its own page, with "Download PDF" and "Check again". */
 export function ReportPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const report = useSavedReport(id);
+  const download = usePdfDownload();
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5 px-4 py-10 sm:px-6 sm:py-12">
@@ -51,13 +52,26 @@ export function ReportPage() {
                 {(report.data.durationMs / 1000).toFixed(1)}s
               </p>
             </div>
-            <Button
-              className="h-12 shrink-0 self-start px-5 sm:self-auto"
-              onClick={() => navigate('/home', { state: { check: report.data.hostname } })}
-            >
-              Check again
-            </Button>
+            <div className="flex shrink-0 flex-col gap-2.5 sm:flex-row">
+              <Button
+                variant="outline"
+                className="h-12 px-5"
+                disabled={download.pending}
+                onClick={() => download.start(report.data.id!)}
+              >
+                {download.pending ? (
+                  <Loader2 className="size-[18px] animate-spin" aria-hidden="true" />
+                ) : (
+                  <Download className="size-[18px]" aria-hidden="true" />
+                )}
+                {download.pending ? 'Preparing PDF…' : 'Download PDF'}
+              </Button>
+              <Button className="h-12 px-5" onClick={() => navigate('/home', { state: { check: report.data.hostname } })}>
+                Check again
+              </Button>
+            </div>
           </div>
+          {download.error && <FormError message={download.error} />}
           <ScanReport report={report.data} />
         </>
       )}
