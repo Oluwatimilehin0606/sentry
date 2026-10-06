@@ -8,6 +8,7 @@ import {
   Globe,
   LockKeyhole,
   ShieldCheck,
+  Smartphone,
   type LucideIcon,
 } from 'lucide-react';
 import { useEffect, type CSSProperties, type ReactNode } from 'react';
@@ -17,6 +18,7 @@ import { MonitorWave } from '@/components/MonitorWave';
 import { FormNotice } from '@/components/FormNotice';
 import { Button } from '@/components/ui/button';
 import { authClient, useSession } from '@/lib/auth-client';
+import { ANDROID_APP_URL, offerAndroidApp } from '@/lib/install';
 import { useScrollReveal } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
@@ -322,13 +324,26 @@ function FinalCta() {
               Free, no technical knowledge needed, and your first results arrive in seconds.
             </p>
           </div>
-          <Link
-            to="/sign-up"
-            className="group inline-flex h-13 shrink-0 items-center justify-center gap-2.5 rounded-[10px] bg-on-band px-7.5 text-[1.0625rem] font-semibold text-band transition-[opacity,translate] duration-200 hover:-translate-y-0.5 hover:opacity-95 focus-visible:ring-[3px] focus-visible:ring-on-band/50 focus-visible:outline-none sm:h-14 sm:text-lg"
-          >
-            Get started
-            <ArrowRight className="size-4.5 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
-          </Link>
+          <div className="flex shrink-0 flex-col gap-3">
+            <Link
+              to="/sign-up"
+              className="group inline-flex h-13 shrink-0 items-center justify-center gap-2.5 rounded-[10px] bg-on-band px-7.5 text-[1.0625rem] font-semibold text-band transition-[opacity,translate] duration-200 hover:-translate-y-0.5 hover:opacity-95 focus-visible:ring-[3px] focus-visible:ring-on-band/50 focus-visible:outline-none sm:h-14 sm:text-lg"
+            >
+              Get started
+              <ArrowRight className="size-4.5 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
+            </Link>
+            {/* Approved mockup option B. A plain link to the file: the phone downloads and installs it. */}
+            {offerAndroidApp() && (
+              <a
+                href={ANDROID_APP_URL}
+                download="sentry.apk"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-[10px] border border-on-band/35 px-5.5 text-[0.9375rem] font-semibold text-on-band transition-colors duration-200 hover:bg-on-band/10 focus-visible:ring-[3px] focus-visible:ring-on-band/50 focus-visible:outline-none"
+              >
+                <Smartphone className="size-4.5" aria-hidden="true" />
+                Get the Android app
+              </a>
+            )}
+          </div>
         </div>
       </Container>
     </section>

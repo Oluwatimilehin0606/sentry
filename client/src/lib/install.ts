@@ -40,11 +40,11 @@ export function registerServiceWorker() {
   });
 }
 
-const runningAsApp = () =>
+export const runningAsApp = () =>
   window.matchMedia('(display-mode: standalone)').matches ||
   (navigator as Navigator & { standalone?: boolean }).standalone === true;
 
-const isIphone = () =>
+export const isIphone = () =>
   /iPhone|iPad|iPod/.test(navigator.userAgent) ||
   // iPads say "Macintosh" now; a touch screen gives them away.
   (navigator.userAgent.includes('Macintosh') && navigator.maxTouchPoints > 1);
@@ -77,3 +77,9 @@ export function useInstall(): InstallState & { prompt: () => Promise<void> } {
     },
   };
 }
+
+/** Where the Android app (APK) is downloaded from: csentinel.com.ng/download/sentry.apk. */
+export const ANDROID_APP_URL = '/download/sentry.apk';
+
+/** "Get the Android app": not on iPhones (they can't install it), nor inside the installed app. */
+export const offerAndroidApp = () => !isIphone() && !runningAsApp();
