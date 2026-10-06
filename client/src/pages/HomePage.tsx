@@ -271,6 +271,8 @@ export function HomePage() {
     },
   });
   const shown = scan.data ?? (scan.isPending || scan.isError ? undefined : latestSaved.data);
+  // The latest saved report is still on its way (placeholders keep its place).
+  const loadingLatest = !scan.isPending && !scan.isError && !shown && (saved.isPending || latestSaved.isLoading);
 
   useEffect(() => {
     if (scan.data) reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -311,6 +313,12 @@ export function HomePage() {
             <h1 className="font-display text-[2rem] leading-[1.1] font-bold tracking-tight sm:text-[2.5rem]">Check a website</h1>
           </div>
           <CommandBar value={domain} onChange={setDomain} onSubmit={check} pending={scan.isPending} />
+          {/* Keeps the row's place while past checks load, so the page below doesn't jump down. */}
+          {saved.isPending && (
+            <div aria-hidden="true" className="flex h-[34px] items-center">
+              <span className="h-[34px] w-64 animate-pulse rounded-full bg-muted" />
+            </div>
+          )}
           {recent.length > 0 && (
             <div className="flex flex-wrap items-center gap-2.5 text-sm">
               <span className="text-muted-foreground">Recent checks:</span>
@@ -363,14 +371,17 @@ export function HomePage() {
             />
           ) : shown ? (
             <ScanReport report={shown} />
+          ) : loadingLatest ? (
+            // About the size of a report, so the page doesn't jump when it arrives.
+            <div aria-hidden="true" className="h-[560px] animate-pulse rounded-[14px] border bg-card" />
           ) : (
-            !scan.isError &&
-            !(saved.isPending || latestSaved.isLoading) && <NoReportYet hasRecent={recent.length > 0} />
+            !scan.isError && <NoReportYet hasRecent={recent.length > 0} />
           )}
         </div>
 
         <aside className="flex flex-col gap-5">
           {shown && !scan.isPending && <NextStepCard report={shown} />}
+          {loadingLatest && <div aria-hidden="true" className="h-[145px] animate-pulse rounded-[14px] border bg-card" />}
           <YourWebsites />
           <HowGradesWork current={shown?.grade} />
         </aside>

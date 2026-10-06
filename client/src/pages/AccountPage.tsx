@@ -59,7 +59,7 @@ export function AccountPage() {
               [
                 'Email',
                 data && (
-                  <span className="flex min-w-0 items-center gap-2">
+                  <span className="flex h-6 min-w-0 items-center gap-2">
                     <span className="truncate">{data.user.email}</span>
                     {data.user.emailVerified && (
                       <span className="flex shrink-0 items-center gap-1 text-xs font-bold text-pass">
@@ -80,9 +80,9 @@ export function AccountPage() {
             ] as const
           ).map(([term, value]) => (
             <div key={term} className="flex flex-col gap-0.5 border-b p-4 sm:px-5 sm:[&:nth-last-child(-n+2)]:border-b-0 last:border-b-0 sm:odd:border-r">
-              <dt className="text-xs font-semibold tracking-[0.06em] text-subtle-foreground uppercase">{term}</dt>
+              <dt className="text-xs font-semibold tracking-[0.06em] text-muted-foreground uppercase">{term}</dt>
               <dd className="truncate">
-                {isPending ? <span className="inline-block h-5 w-40 animate-pulse rounded bg-muted" /> : value}
+                {isPending ? <span className="block h-6 w-40 animate-pulse rounded bg-muted" /> : value}
               </dd>
             </div>
           ))}
@@ -117,7 +117,7 @@ function WebsitesSummary() {
       <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 rounded-lg border bg-card px-5 py-4">
         <p>
           {sites.isPending ? (
-            <span className="inline-block h-5 w-64 animate-pulse rounded bg-muted" />
+            <span className="block h-6 w-64 animate-pulse rounded bg-muted" />
           ) : list.length === 0 ? (
             'No websites yet. Add one to prove it’s yours and get its full check.'
           ) : (

@@ -191,7 +191,8 @@ function Devices() {
       <ul aria-busy={devices.isPending} className="flex flex-col rounded-md border [&>li+li]:border-t">
         {devices.isPending && (
           <li className="px-4 py-3">
-            <span className="inline-block h-5 w-56 animate-pulse rounded bg-muted" />
+            {/* As tall as a real device row (name and sign-in time), so nothing jumps when they load. */}
+            <span className="block h-11 w-56 animate-pulse rounded bg-muted" />
           </li>
         )}
         {list.map((d) => {

@@ -74,7 +74,9 @@ export function AppLayout() {
         </nav>
       </header>
 
-      <main className="flex flex-1 flex-col">
+      {/* At least a screen tall: while a page is still loading its data, the footer waits below the
+          fold instead of showing and then being pushed down (a layout shift). */}
+      <main className="flex min-h-svh flex-1 flex-col">
         <Outlet />
       </main>
 

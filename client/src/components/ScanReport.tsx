@@ -122,6 +122,8 @@ export function ScanReport({ report }: { report: Report }) {
 
   return (
     <section aria-label={`Scan report for ${report.hostname}`} className="flex flex-col gap-4">
+      {/* For screen readers: the problems below are level-3 headings, so they need a level 2 above them. */}
+      <h2 className="sr-only">Report for {report.hostname}</h2>
       <div className="flex flex-col gap-5 rounded-[14px] border bg-card p-5 shadow-[0_1px_2px_rgb(17_26_43/0.05),0_10px_28px_rgb(17_26_43/0.07)] sm:flex-row sm:items-center sm:gap-6 sm:p-6">
         <div className="flex items-center gap-5 sm:contents">
           <div
