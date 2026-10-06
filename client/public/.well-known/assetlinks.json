@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "ng.com.csentinel.app",
+      "sha256_cert_fingerprints": [
+        "49:15:3A:2A:FD:79:57:D8:6B:5D:72:01:17:D7:D4:45:E8:3C:85:46:80:DE:A4:E1:74:B3:A8:75:D5:90:D6:A9"
+      ]
+    }
+  }
+]

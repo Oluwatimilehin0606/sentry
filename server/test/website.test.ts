@@ -16,6 +16,8 @@ beforeAll(() => {
   fs.writeFileSync(path.join(website, 'assets', 'index-abc123.js'), 'console.log(1)');
   fs.writeFileSync(path.join(website, 'sw.js'), '// service worker');
   fs.writeFileSync(path.join(website, 'manifest.webmanifest'), '{"name":"Sentry"}');
+  fs.mkdirSync(path.join(website, '.well-known'));
+  fs.writeFileSync(path.join(website, '.well-known', 'assetlinks.json'), '[{"relation":[]}]');
 });
 
 afterAll(async () => {
@@ -49,6 +51,14 @@ describe('one port: the API also serves the built website', () => {
     expect(worker.headers['content-type']).toMatch(/javascript/);
     expect(manifest.headers['cache-control']).toBe('no-cache');
     expect(manifest.headers['content-type']).toMatch(/manifest\+json/);
+  });
+
+  it('serves the Android app’s proof of ownership (.well-known/assetlinks.json) as JSON', async () => {
+    const res = await request(createApp({ website })).get('/.well-known/assetlinks.json');
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/application\/json/);
+    expect(res.body).toEqual([{ relation: [] }]);
   });
 
   it('answers a missing built file with 404, not the page', async () => {
