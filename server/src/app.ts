@@ -212,6 +212,10 @@ function serveWebsite(app: express.Express, folder: string) {
       // Sentry reaches installed apps the next time they open.
       setHeaders: (res, file) => {
         if (/(sw\.js|manifest\.webmanifest|offline\.html)$/.test(file)) res.set('cache-control', 'no-cache');
+        // The Android app (/download/sentry.apk): saved as a file, and never an old version.
+        if (file.endsWith('.apk')) {
+          res.set({ 'cache-control': 'no-cache', 'content-disposition': 'attachment; filename="sentry.apk"' });
+        }
       },
     }),
   );

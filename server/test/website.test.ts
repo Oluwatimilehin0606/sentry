@@ -18,6 +18,8 @@ beforeAll(() => {
   fs.writeFileSync(path.join(website, 'manifest.webmanifest'), '{"name":"Sentry"}');
   fs.mkdirSync(path.join(website, '.well-known'));
   fs.writeFileSync(path.join(website, '.well-known', 'assetlinks.json'), '[{"relation":[]}]');
+  fs.mkdirSync(path.join(website, 'download'));
+  fs.writeFileSync(path.join(website, 'download', 'sentry.apk'), 'PK pretend app');
 });
 
 afterAll(async () => {
@@ -59,6 +61,15 @@ describe('one port: the API also serves the built website', () => {
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/application\/json/);
     expect(res.body).toEqual([{ relation: [] }]);
+  });
+
+  it('offers the Android app as a download, never an old copy', async () => {
+    const res = await request(createApp({ website })).get('/download/sentry.apk');
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('application/vnd.android.package-archive');
+    expect(res.headers['content-disposition']).toBe('attachment; filename="sentry.apk"');
+    expect(res.headers['cache-control']).toBe('no-cache');
   });
 
   it('answers a missing built file with 404, not the page', async () => {
