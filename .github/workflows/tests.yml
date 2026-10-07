@@ -33,12 +33,14 @@ jobs:
     env:
       # A throwaway database that exists only for this run; not a secret.
       DATABASE_URL: postgres://sentry:sentry-ci-only@localhost:5432/sentry_test
+      # Used as is by the API and browser tests (otherwise they'd add "_test" to the name).
+      TEST_DATABASE_URL: postgres://sentry:sentry-ci-only@localhost:5432/sentry_test
       BETTER_AUTH_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
