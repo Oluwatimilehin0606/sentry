@@ -1,0 +1,13 @@
+{
+  "name": "@sentry/android",
+  "private": true,
+  "type": "module",
+  "description": "Builds Sentry's Android app (a Trusted Web Activity for csentinel.com.ng). See README.md.",
+  "scripts": {
+    "build": "node build-apk.mjs",
+    "verify": "node verify-apk.mjs"
+  },
+  "dependencies": {
+    "@bubblewrap/core": "1.25.0"
+  }
+}

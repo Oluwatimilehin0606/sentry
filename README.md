@@ -12,24 +12,28 @@ SMEs are prime targets for opportunistic cyberattacks (phishing, ransomware, cre
 
 > There is no low-cost, low-friction tool that tells a non-technical business owner, in plain language: *"Here's your risk level, here's why it matters, and here's what to fix first."*
 
-## Current Status (5 Oct 2026)
+## Current Status (7 Oct 2026)
 
-**Live at [csentinel.com.ng](https://csentinel.com.ng).** All the planned features up to scheduled re-checks and email alerts are built, tested and online. What's left before the final presentation on 17 October is polish and demo preparation (see [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), Phase 8).
+**Live at [csentinel.com.ng](https://csentinel.com.ng)**, installable as an app, and as an Android app ([download](https://csentinel.com.ng/download/sentry.apk)). Everything planned for the final presentation on 17 October is built, tested and online; what's left is demo preparation (see [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) and [docs/demo-script.md](docs/demo-script.md)).
 
 What a business owner can do today:
 
-- **Sign up** and check any website for free. The **light check** looks at the connection, the certificate and the browser protections; anyone can run it on any site.
+- **Sign up** (confirming their email) and check any website for free. The **light check** looks at the connection, the certificate and the browser protections; anyone can run it on any site.
 - **Prove a website is theirs** by adding one DNS record, which unlocks the **full check**: it also looks for private files left public (settings files, `.git` folders, backups, debug and database-admin pages) and old encryption.
-- Get **one grade (A–F) and a score out of 100**, with every problem explained in plain English: what it is, why it matters, how to fix it, and a "For your developer" box with the technical detail. The summary names the single fix that raises the grade most.
+- Get **one grade (A–F) and a score out of 100**, with every problem explained in plain English: what it is, why it matters, how to fix it, and a "For your developer" box with the technical detail. The summary names the single fix that raises the grade most. Any report downloads as a **PDF**.
 - See each website's **score over time** and **what changed since the last check** (new and fixed problems).
 - Turn on **automatic weekly or monthly checks**, and get an **email alert** when a website gets worse. "Run it now" runs the automatic check straight away.
+- Look after their account: **forgot password**, **change password**, see **where they're signed in** and sign other devices out, **download all their data** (one JSON file) and **delete their account** and everything in it.
+- **Install Sentry** on a phone or computer from the browser, or the **Android app** from the download link.
 
 Built to be safe and private:
 
-- Sentry only ever connects to public internet addresses (never private networks or cloud metadata), checking every connection, not just the first lookup. Full checks only run on websites the account has proved it owns.
-- Passwords are stored as scrypt hashes, sessions live in httpOnly cookies, sign-in attempts and checks are rate-limited per person, and every change must come from Sentry's own pages.
-- Strict security headers on Sentry itself, including a Content-Security-Policy with no inline scripts; it checks itself to an **A**.
-- About 180 automated tests, plus a browser test that walks the whole journey in Chrome against a deliberately weak pretend website.
+- Sentry only ever connects to public internet addresses (never private networks or cloud metadata), checking every connection, not just the first lookup. Full checks only run on websites the account has proved it owns. When it finds a private file left public, it keeps only the address, never what's inside.
+- Accounts: emails are confirmed before the first sign-in; passwords are stored as scrypt hashes, and passwords known from data breaches are refused (Have I Been Pwned, sending only 5 characters of a hash); sessions live in httpOnly cookies; a password reset or change signs every other device out and emails the owner; deleting an account needs the password. "Forgot password" and sign-up answer the same whether or not an email has an account.
+- Rate limits everywhere: sign-in and sign-up 5 a minute, confirm and reset emails 5 an hour, checks per account, and 300 API requests a minute per visitor overall.
+- Privacy: API answers are never stored by browsers (`no-store`); the installed app keeps only Sentry's own code on the device, never personal data; one cookie, for signing in, and no tracking or outside scripts.
+- Strict security headers on Sentry itself, including a Content-Security-Policy with no inline scripts and a Permissions-Policy; it checks itself to an **A**. Google PageSpeed Insights: 95–100 on performance, accessibility, best practices and SEO, phone and desktop.
+- About 220 automated tests, plus a browser test that walks the whole journey in Chrome (sign-up with email confirmation included) against a deliberately weak pretend website.
 
 ## Features
 
@@ -41,6 +45,9 @@ Built to be safe and private:
 | Ownership proof | A DNS TXT record; proving a domain also covers its subdomains |
 | History | Every check saved; score-over-time chart and "since your last check" changes for each website |
 | Automatic checks and alerts | Weekly or monthly checks, an email when the grade drops or a new serious problem appears, and "Run it now" |
+| PDF reports | Any saved report as a PDF, for a developer or a manager |
+| Account security and privacy | Email confirmation, forgot/change password, signed-in devices, download my data, delete account |
+| Apps | Installable from the browser (manifest + service worker, offline page), and an Android app (APK) |
 
 ## Tech Stack
 
@@ -55,6 +62,8 @@ All free and open source; online it runs on free plans.
 - **Automatic checks:** a small scheduler inside the server; one database statement claims due websites, so two copies never check the same website twice
 - **Scanning:** Node's built-in `tls`, `dns`, `http` and `https`
 - **Email:** Nodemailer over SMTP: Resend online, the MailDev test inbox on this machine
+- **PDF:** @react-pdf/renderer, on the server
+- **Apps:** a web app manifest and a hand-written service worker; the Android app is a Trusted Web Activity built with Google's Bubblewrap (see [android/](android/README.md))
 - **Testing:** Vitest, Supertest, Playwright
 - **Online:** Render (Sentry), Neon (database), Resend (email), Cloudflare (DNS)
 
@@ -145,31 +154,38 @@ Everything runs on free plans: **Render** runs Sentry (website and API together)
 1. **Database (Neon):** create a project (region: Europe, e.g. Frankfurt) and copy its connection string (`postgres://…?sslmode=require`).
 2. **Domain records (Cloudflare):** add the domain to Cloudflare (free plan) and change the domain's nameservers at the registrar to the two Cloudflare gives you.
 3. **Sentry (Render):** New → **Blueprint** → choose this repository. Render reads `render.yaml` and asks for:
-   - `APP_URL`: `https://sentry.<your domain>`
+   - `APP_URL`: Sentry's address, e.g. `https://csentinel.com.ng` (the main domain) or `https://sentry.<your domain>`. Any other address Render receives is forwarded there.
    - `DATABASE_URL`: the Neon connection string
    - `SMTP_URL`: `smtps://resend:<Resend API key>@smtp.resend.com:2465` (port 2465: Render's free plan blocks the usual email ports)
    - `MAIL_FROM`: `Sentry <alerts@<your domain>>` once the domain is verified in Resend (until then, `Sentry <onboarding@resend.dev>`, which only reaches the Resend account's own address)
    - `DEMO_SITE_HOST`: `demo.<your domain>`, the deliberately weak website for the demo, served by Sentry itself
    - `DEMO_EMAIL`: the demo account's email. That account gets **Reset demo** on its Account page, which puts the demo websites back to their starting history without the command line
-4. **Addresses:** in Render, add both `sentry.<your domain>` and `demo.<your domain>` as custom domains. In Cloudflare, add the two CNAME records Render shows, with the cloud icon set to **DNS only** (grey), so Render can issue the HTTPS certificates.
+4. **Addresses:** in Render, add Sentry's address and `demo.<your domain>` as custom domains. In Cloudflare, add the records Render shows (for the main domain itself an **A** record to Render's address, for subdomains a **CNAME**), with the cloud icon set to **DNS only** (grey), so Render can issue the HTTPS certificates. csentinel.com.ng uses the main domain: A `@` → Render, CNAME `www` and `demo` → the Render service.
 5. **Email from your domain (Resend):** add the domain in Resend and the records it shows to Cloudflare. Then alerts can go to any address.
 6. **Demo account:** create `.env.online` on your computer (never committed) with the Neon `DATABASE_URL`, `DEMO_SITE_HOST` and `DEMO_EMAIL`, then run `npm run db:seed -- --online`. The demo website gets five weeks of A grades, so "Run it now" on demo day shows "A → F". The password is saved in `.env.online`.
 7. **Prove the demo website for real:** the first run prints a TXT record to add to the main domain in Cloudflare (Name `@`; on the main domain because `demo.` already has a CNAME record, and proving the main domain covers its subdomains). Add it, wait a few minutes and run the seed again: the demo website is then verified, and stays so on every later run.
 
 Free Render services sleep after 15 minutes without visitors and take about a minute to wake: open Sentry a few minutes before presenting. Each `git push` to `main` deploys again by itself.
 
+### The Android app
+
+The app (`ng.com.csentinel.app`) opens csentinel.com.ng full-screen in Chrome, so every change to the website reaches it without a new version. Its build scripts are in [android/](android/README.md); the signing key is not in this repository and must never be. The current APK is served at `/download/sentry.apk` from `client/public/download/`, and `client/public/.well-known/assetlinks.json` lists the key's fingerprint so Android opens the app without an address bar.
+
 ### Project layout
 
 ```
 client/   React 19 + Vite + Tailwind v4 + shadcn/ui (the website)
 server/   Node 24 + Express 5 (the API)
+e2e/      the Playwright browser test and its pretend website
+android/  build scripts for the Android app (no signing key here)
+docs/     the demo script
 ```
 
 ## Legal & Ethical Guardrails
 
-- Only scans domains the user has verified ownership of (or explicit authorization to test).
-- Rate-limited scanning to avoid resembling malicious reconnaissance.
-- Clear terms of service establishing the user's responsibility to only scan domains they own.
+- Full checks only run on domains the account has proved it owns with a DNS record; light checks only read what any browser sees.
+- Gentle, rate-limited checks (two requests at a time, a short fixed list of files) so they never look like an attack.
+- Signing up requires agreeing to only check websites you own or have written permission to test; the date is recorded on the account.
 
 ## License
 
