@@ -1,6 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import { db } from '../db/client.ts';
 import { user } from '../db/schema.ts';
+import { sendReportToDeveloper } from '../developer/send.ts';
 import { alertEmail } from '../email/alert.ts';
 import { sendEmail as defaultSend, type SendEmail } from '../email/mailer.ts';
 import { env } from '../env.ts';
@@ -18,6 +19,11 @@ export type Due = {
   hostname: string;
   rescan_interval: 'weekly' | 'monthly';
   alerts_enabled: boolean;
+  /** "Send to my developer": whoever built the website, if saved, and whether to send automatically. */
+  developer_name?: string | null;
+  developer_email?: string | null;
+  developer_auto_send?: boolean;
+  developer_stop_token?: string | null;
 };
 
 export type RunOptions = {
@@ -49,7 +55,8 @@ async function claimDue(now: Date, batch: number): Promise<Due[]> {
       limit ${batch}
       for update skip locked
     )
-    returning id, user_id, hostname, rescan_interval, alerts_enabled
+    returning id, user_id, hostname, rescan_interval, alerts_enabled,
+      developer_name, developer_email, developer_auto_send, developer_stop_token
   `);
   return result.rows;
 }
@@ -64,6 +71,8 @@ export type CheckOutcome = {
   current?: { grade: string; score: number };
   /** Set when the alert email went out. */
   emailedTo?: string;
+  /** Set when the report also went to the website's developer. */
+  developerEmailed?: string;
 };
 
 /**
@@ -101,6 +110,24 @@ export async function runAutomaticCheck(due: Due, opts: RunOptions = {}): Promis
     checkId,
     ...CATALOG[checkId as CheckId],
   }));
+  const [owner] = await db.select({ name: user.name, email: user.email }).from(user).where(eq(user.id, due.user_id));
+
+  // The developer gets the report after every automatic check that finds a problem, if the owner
+  // turned that on ("Send to my developer"). Independent of the owner's own alert below.
+  if (saved && owner && due.developer_auto_send && due.developer_email && saved.findings.some((f) => f.status === 'fail')) {
+    const developerSent = await sendReportToDeveloper({
+      owner,
+      developer: { name: due.developer_name ?? '', email: due.developer_email },
+      report: saved,
+      stopToken: due.developer_stop_token,
+      send,
+    }).catch((err) => {
+      logger.warn({ hostname: due.hostname, err: (err as Error).message }, 'Report to developer could not be sent');
+      return false;
+    });
+    if (developerSent) result.developerEmailed = due.developer_email;
+  }
+
   if (
     !saved ||
     !changes ||
@@ -114,7 +141,6 @@ export async function runAutomaticCheck(due: Due, opts: RunOptions = {}): Promis
     return result;
   }
 
-  const [owner] = await db.select({ email: user.email }).from(user).where(eq(user.id, due.user_id));
   const email = alertEmail({
     hostname: due.hostname,
     interval: due.rescan_interval,

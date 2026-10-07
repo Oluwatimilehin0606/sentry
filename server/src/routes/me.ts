@@ -130,6 +130,9 @@ meRouter.get(
               automaticChecks: w.rescanInterval,
               nextCheckAt: w.nextCheckAt,
               emailAlerts: w.alertsEnabled,
+              developer: w.developerEmail
+                ? { name: w.developerName, email: w.developerEmail, sendAfterAutomaticChecks: w.developerAutoSend }
+                : null,
             })),
             checks: checks.map((c) => ({
               id: c.id,
@@ -140,6 +143,7 @@ meRouter.get(
               grade: c.grade,
               score: c.score,
               finalUrl: c.finalUrl,
+              sentToDeveloper: c.developerSentAt ? { to: c.developerSentTo, at: c.developerSentAt } : null,
               results: found
                 .filter((f) => f.scanId === c.id)
                 .map((f) => ({

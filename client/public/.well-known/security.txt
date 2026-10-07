@@ -1,0 +1,5 @@
+# How to report a security problem in Sentry itself (RFC 9116).
+Contact: https://csentinel.com.ng/contact
+Expires: 2027-10-07T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://csentinel.com.ng/.well-known/security.txt

@@ -4,6 +4,7 @@ import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { db } from '../db/client.ts';
 import { domains, scans } from '../db/schema.ts';
+import { clearDeveloper, saveDeveloper } from '../developer/send.ts';
 import { hasVerifyRecord, newVerifyToken, TXT_PREFIX } from '../domains/verify.ts';
 import { requireAuth } from '../middleware/require-auth.ts';
 import { firstCheckAt } from '../schedule/plan.ts';
@@ -28,6 +29,10 @@ function present(row: DomainRow) {
     rescanInterval: row.rescanInterval,
     nextCheckAt: row.nextCheckAt,
     alertsEnabled: row.alertsEnabled,
+    // Whoever built the website ("Send to my developer"); the stop link's secret never leaves the server.
+    developer: row.developerEmail
+      ? { name: row.developerName ?? '', email: row.developerEmail, autoSend: row.developerAutoSend }
+      : null,
     record: { type: 'TXT', value: `${TXT_PREFIX}${row.verifyToken}` },
   };
 }
@@ -161,6 +166,36 @@ domainsRouter.patch('/:id', async (req, res) => {
   res.json({ domain: present(updated!) });
 });
 
+export const DeveloperBody = z.object({
+  name: z.string().trim().min(1).max(80),
+  email: z.email().max(254),
+  autoSend: z.boolean(),
+});
+
+/** "Your developer" on the website's page: who gets the reports, and whether automatically. */
+domainsRouter.put('/:id/developer', async (req, res) => {
+  const row = await ownDomain(res.locals.user!.id, String(req.params.id));
+  if (!row) {
+    res.status(404).json(NOT_FOUND);
+    return;
+  }
+  const parsed = DeveloperBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Enter your developer’s name and a valid email address.' });
+    return;
+  }
+  res.json({ domain: present(await saveDeveloper(row.id, row, parsed.data)) });
+});
+
+domainsRouter.delete('/:id/developer', async (req, res) => {
+  const row = await ownDomain(res.locals.user!.id, String(req.params.id));
+  if (!row) {
+    res.status(404).json(NOT_FOUND);
+    return;
+  }
+  res.json({ domain: present(await clearDeveloper(row.id)) });
+});
+
 domainsRouter.post(
   '/:id/verify',
   rateLimit({
@@ -238,6 +273,10 @@ domainsRouter.post(
       hostname: row.hostname,
       rescan_interval: row.rescanInterval,
       alerts_enabled: row.alertsEnabled,
+      developer_name: row.developerName,
+      developer_email: row.developerEmail,
+      developer_auto_send: row.developerAutoSend,
+      developer_stop_token: row.developerStopToken,
     });
     if (result.outcome === 'skipped') {
       // The only reason to skip: the daily limit. Put the next check back as it was.
@@ -259,6 +298,7 @@ domainsRouter.post(
         previous: result.previous ?? null,
         current: result.current,
         emailedTo: result.emailedTo ?? null,
+        developerEmailed: result.developerEmailed ?? null,
       },
       domain: present(moved!),
     });

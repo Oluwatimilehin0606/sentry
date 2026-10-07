@@ -23,6 +23,12 @@ const EnvSchema = z.object({
     .email()
     .optional()
     .or(z.literal('').transform(() => undefined)),
+  // Where "Contact us" messages go (Sentry's own inbox). Unset: the demo account's email (DEMO_EMAIL).
+  CONTACT_EMAIL: z
+    .string()
+    .email()
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
   // The demo website's ownership proof, used only if "Reset demo" finds no demo website to copy it from.
   DEMO_VERIFY_TOKEN: z.string().optional(),
   DATABASE_URL: z

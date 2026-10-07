@@ -145,7 +145,13 @@ export type ReportChanges = {
   stillFailing: number;
 };
 
-export type SavedReport = ScanReport & { id: string; trigger: Trigger; changes: ReportChanges | null };
+export type SavedReport = ScanReport & {
+  id: string;
+  trigger: Trigger;
+  changes: ReportChanges | null;
+  /** The last time the report was emailed to a developer ("Send to my developer"). */
+  sentToDeveloper?: { to: string; at: string } | null;
+};
 
 /** One saved report, rebuilt with today's wording. Other people's reports read as missing. */
 export async function getScan(userId: string, id: string): Promise<SavedReport | null> {
@@ -201,7 +207,10 @@ export async function getScan(userId: string, id: string): Promise<SavedReport |
       stillFailing: diff.stillFailing.length,
     };
   }
-  return { id: row.id, ...report, trigger: row.trigger, changes };
+  const sentToDeveloper =
+    row.developerSentAt && row.developerSentTo ? { to: row.developerSentTo, at: row.developerSentAt.toISOString() } : null;
+  // Only once it has been sent, so a saved report otherwise reads exactly like the live one.
+  return { id: row.id, ...report, trigger: row.trigger, changes, ...(sentToDeveloper ? { sentToDeveloper } : {}) };
 }
 
 /** How many checks the account started since `since` (for the daily limit). */

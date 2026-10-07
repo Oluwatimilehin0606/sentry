@@ -24,6 +24,7 @@ describe('isCoveredBy', () => {
     rescanInterval: 'none',
     nextCheckAt: null,
     alertsEnabled: true,
+    developer: null,
   });
 
   it('matches the server: a verified domain covers itself and its subdomains only', () => {
@@ -43,6 +44,7 @@ describe('runNowSummary', () => {
     previous: { grade: 'A', score: 96 },
     current: { grade: 'A', score: 96 },
     emailedTo: null,
+    developerEmailed: null,
     ...over,
   });
 
@@ -53,6 +55,18 @@ describe('runNowSummary', () => {
       text: 'bakery.test dropped from an A to an F.',
       email: 'Alert email sent to alerts@sentry.example.',
     });
+  });
+
+  it('also says when the report went to the developer', () => {
+    const r = run({
+      outcome: 'alerted',
+      current: { grade: 'F', score: 28 },
+      emailedTo: 'ada@yourbakery.com',
+      developerEmailed: 'tunde@webcraft.ng',
+    });
+    expect(runNowSummary('bakery.test', r).email).toBe(
+      'Alert email sent to ada@yourbakery.com. Report sent to your developer (tunde@webcraft.ng).',
+    );
   });
 
   it('still shows a drop when email alerts are off', () => {

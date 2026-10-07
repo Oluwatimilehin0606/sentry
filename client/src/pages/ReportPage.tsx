@@ -2,7 +2,9 @@ import { ArrowLeft, Download, Loader2 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { FormError } from '@/components/FormError';
 import { ScanReport } from '@/components/ScanReport';
+import { SendToDeveloper, SentToDeveloperLine } from '@/components/SendToDeveloper';
 import { Button } from '@/components/ui/button';
+import { useDomains } from '@/lib/domains';
 import { usePdfDownload, useSavedReport } from '@/lib/reports';
 
 const dateTime = new Intl.DateTimeFormat('en-GB', {
@@ -13,12 +15,14 @@ const dateTime = new Intl.DateTimeFormat('en-GB', {
   minute: '2-digit',
 });
 
-/** One saved report on its own page, with "Download PDF" and "Check again". */
+/** One saved report on its own page, with "Download PDF", "Send to my developer" and "Check again". */
 export function ReportPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const report = useSavedReport(id);
   const download = usePdfDownload();
+  const sites = useDomains();
+  const site = report.data ? sites.data?.find((d) => d.hostname === report.data.hostname) : undefined;
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5 px-4 py-10 sm:px-6 sm:py-12">
@@ -66,11 +70,13 @@ export function ReportPage() {
                 )}
                 {download.pending ? 'Preparing PDF…' : 'Download PDF'}
               </Button>
-              <Button className="h-12 px-5" onClick={() => navigate('/home', { state: { check: report.data.hostname } })}>
+              <SendToDeveloper report={{ ...report.data, id: report.data.id! }} site={site} />
+              <Button variant="outline" className="h-12 px-5" onClick={() => navigate('/home', { state: { check: report.data.hostname } })}>
                 Check again
               </Button>
             </div>
           </div>
+          <SentToDeveloperLine report={report.data} site={site} />
           {download.error && <FormError message={download.error} />}
           <ScanReport report={report.data} />
         </>

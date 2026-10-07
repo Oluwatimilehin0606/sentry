@@ -23,6 +23,8 @@ What a business owner can do today:
 - Get **one grade (A–F) and a score out of 100**, with every problem explained in plain English: what it is, why it matters, how to fix it, and a "For your developer" box with the technical detail. The summary names the single fix that raises the grade most. Any report downloads as a **PDF**.
 - See each website's **score over time** and **what changed since the last check** (new and fixed problems).
 - Turn on **automatic weekly or monthly checks**, and get an **email alert** when a website gets worse. "Run it now" runs the automatic check straight away.
+- **Send a report to whoever built the website** ("Send to my developer"): the developer gets the owner's note, the problems and the PDF, and replies go to the owner. Sentry can also send it automatically after every automatic check that finds a problem.
+- **Contact us** from any page (`/contact`); messages reach Sentry's inbox with the sender as Reply-to.
 - Look after their account: **forgot password**, **change password**, see **where they're signed in** and sign other devices out, **download all their data** (one JSON file) and **delete their account** and everything in it.
 - **Install Sentry** on a phone or computer from the browser, or the **Android app** from the download link.
 
@@ -46,6 +48,8 @@ Built to be safe and private:
 | History | Every check saved; score-over-time chart and "since your last check" changes for each website |
 | Automatic checks and alerts | Weekly or monthly checks, an email when the grade drops or a new serious problem appears, and "Run it now" |
 | PDF reports | Any saved report as a PDF, for a developer or a manager |
+| Send to my developer | Emails the report (note, problems, PDF) to whoever built the website, by hand or after every automatic check that finds a problem; at most 10 a day, replies go to the owner, the developer can stop them with one click |
+| Contact us | A public form (3 messages an hour per visitor, a hidden bot trap, no third-party CAPTCHA); messages are emailed, not stored. `CONTACT_EMAIL` sets the inbox (default: `DEMO_EMAIL`) |
 | Account security and privacy | Email confirmation, forgot/change password, signed-in devices, download my data, delete account |
 | Apps | Installable from the browser (manifest + service worker, offline page), and an Android app (APK) |
 

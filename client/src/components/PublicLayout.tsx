@@ -7,6 +7,7 @@ const NAV = [
   { href: '/#how', label: 'How it works' },
   { href: '/#checks', label: 'What we check' },
   { href: '/#safety', label: 'Safety' },
+  { href: '/contact', label: 'Contact' },
 ];
 
 /** Header and footer for pages anyone can see: the landing page, sign-in and sign-up. */
@@ -53,7 +54,12 @@ export function PublicLayout() {
             <span className="font-display text-base font-bold text-foreground">Sentry</span>
             <span>Security check-ups in plain English</span>
           </span>
-          <span>Only check websites you own or have permission to test.</span>
+          <span className="flex flex-wrap items-center gap-x-5 gap-y-1">
+            <Link to="/contact" className="font-semibold text-primary underline-offset-4 hover:underline">
+              Contact
+            </Link>
+            <span>Only check websites you own or have permission to test.</span>
+          </span>
         </div>
       </footer>
     </div>

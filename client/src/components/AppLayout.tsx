@@ -83,8 +83,11 @@ export function AppLayout() {
       <footer className="border-t">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-5 text-[0.8125rem] text-muted-foreground sm:px-6">
           <span>Sentry · Security check-ups in plain English</span>
-          <span className="flex items-center gap-3">
+          <span className="flex flex-wrap items-center gap-3">
             <ApiStatus />
+            <NavLink to="/contact" className="font-semibold text-primary underline-offset-4 hover:underline">
+              Contact
+            </NavLink>
             Only check websites you own or have permission to test.
           </span>
         </div>

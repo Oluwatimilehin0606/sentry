@@ -111,6 +111,13 @@ export const domains = pgTable(
     nextCheckAt: timestamp('next_check_at', { withTimezone: true }),
     /** Email the owner when an automatic check finds things got worse. */
     alertsEnabled: boolean('alerts_enabled').notNull().default(true),
+    /** Whoever built the website: "Send to my developer" emails them reports. */
+    developerName: text('developer_name'),
+    developerEmail: text('developer_email'),
+    /** Also email the developer after every automatic check that finds a problem. */
+    developerAutoSend: boolean('developer_auto_send').notNull().default(false),
+    /** In the developer's emails: lets them stop the reports without an account. */
+    developerStopToken: text('developer_stop_token'),
     createdAt: createdAt(),
   },
   (t) => [
@@ -142,6 +149,9 @@ export const scans = pgTable(
     finalUrl: text('final_url'),
     durationMs: integer('duration_ms'),
     error: text('error'),
+    /** The last time this report was emailed to a developer, and to whom. */
+    developerSentAt: timestamp('developer_sent_at', { withTimezone: true }),
+    developerSentTo: text('developer_sent_to'),
     startedAt: timestamp('started_at', { withTimezone: true }),
     finishedAt: timestamp('finished_at', { withTimezone: true }),
     createdAt: createdAt(),

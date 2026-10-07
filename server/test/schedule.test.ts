@@ -127,6 +127,27 @@ describe('running automatic checks', () => {
     expect(sent).toEqual([]);
   });
 
+  it('also sends the report to the website’s developer when that’s on and the check found a problem', async () => {
+    const site = await dueWebsite(false);
+    await db
+      .update(domains)
+      .set({ developerName: 'Tunde', developerEmail: 'tunde@webcraft.example', developerAutoSend: true, developerStopToken: 'stop-token-for-tests-123' })
+      .where(eq(domains.id, site.id));
+    fixture = await startFixture({ http: 'serve' });
+    const sent: Email[] = [];
+    await runDueChecks({ contextFor: () => fixture!.ctx, send: async (e) => (sent.push(e), true) });
+
+    // Alerts are off for the owner, so only the developer's email goes out.
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({ to: 'tunde@webcraft.example', replyTo: 'owner@yourbakery.example' });
+    expect(sent[0]!.subject).toMatch(/asked you to fix \d+ security problems? on localhost/);
+    expect(sent[0]!.attachments?.[0]).toMatchObject({ contentType: 'application/pdf' });
+    expect(sent[0]!.attachments![0]!.content.subarray(0, 4).toString()).toBe('%PDF');
+    expect(sent[0]!.text).toContain('/stop-reports?token=stop-token-for-tests-123');
+    const [saved] = await db.select().from(scans).where(and(eq(scans.userId, ownerId), eq(scans.trigger, 'scheduled')));
+    expect(saved).toMatchObject({ developerSentTo: 'tunde@webcraft.example' });
+  });
+
   it('reports what one check found, for "Run it now"', async () => {
     const site = await dueWebsite(true);
     fixture = await startFixture({ http: 'serve' });

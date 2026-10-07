@@ -128,6 +128,22 @@ export async function plantDemoWebsites(userId: string, opts: PlantOptions): Pro
   const hostnames = list.map((s) => s.hostname);
   const allChecks = Object.keys(CATALOG) as CheckId[];
 
+  // Each website's saved developer ("Send to my developer") survives the reset, like its proof.
+  const kept = new Map(
+    (
+      await db
+        .select({
+          hostname: domains.hostname,
+          developerName: domains.developerName,
+          developerEmail: domains.developerEmail,
+          developerAutoSend: domains.developerAutoSend,
+          developerStopToken: domains.developerStopToken,
+        })
+        .from(domains)
+        .where(and(eq(domains.userId, userId), inArray(domains.hostname, hostnames)))
+    ).map(({ hostname, ...developer }) => [hostname, developer]),
+  );
+
   await db.delete(scans).where(and(eq(scans.userId, userId), inArray(scans.hostname, hostnames)));
   await db.delete(domains).where(and(eq(domains.userId, userId), inArray(domains.hostname, hostnames)));
 
@@ -144,6 +160,7 @@ export async function plantDemoWebsites(userId: string, opts: PlantOptions): Pro
       nextCheckAt:
         site.nextCheckInDays === undefined ? null : daysAgo(-site.nextCheckInDays, 10, (site.checks.at(-1)?.minute ?? 0) + 2),
       alertsEnabled: true,
+      ...kept.get(site.hostname),
     });
 
     const grades: PlantedSite['grades'] = [];

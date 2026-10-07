@@ -2,6 +2,7 @@ import { ArrowLeft, Check, Clock, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { AutomaticChecks } from '@/components/AutomaticChecks';
+import { YourDeveloper } from '@/components/YourDeveloper';
 import { useSession } from '@/lib/auth-client';
 import { CopyButton } from '@/components/CopyButton';
 import { FormError } from '@/components/FormError';
@@ -437,6 +438,7 @@ export function WebsitePage() {
             </div>
           )}
           <AutomaticChecks domain={domain} email={session?.user.email} />
+          <YourDeveloper domain={domain} />
           <History hostname={domain.hostname} />
           <Checks hostname={domain.hostname} onCheck={check} />
         </>

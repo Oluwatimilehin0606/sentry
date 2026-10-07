@@ -3,7 +3,15 @@ import nodemailer, { type Transporter } from 'nodemailer';
 import { env } from '../env.ts';
 import { logger } from '../logger.ts';
 
-export type Email = { to: string; subject: string; text: string; html: string };
+export type Email = {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+  /** Where replies go (e.g. the owner who sent their developer a report, or a contact form's sender). */
+  replyTo?: string;
+  attachments?: { filename: string; content: Buffer; contentType?: string }[];
+};
 export type SendEmail = (email: Email) => Promise<boolean>;
 
 let transport: Transporter | undefined;

@@ -62,4 +62,21 @@ describe('Reset demo', () => {
     expect(after!.verifyToken).toBe(before!.verifyToken);
     expect(after!.verifiedAt).not.toBeNull();
   });
+
+  it('keeps the demo website’s saved developer, so the demo shows the report reaching them', async () => {
+    await db
+      .update(domains)
+      .set({ developerName: 'Tunde', developerEmail: 'tunde@webcraft.example', developerAutoSend: true, developerStopToken: 'stop-token-for-tests-456' })
+      .where(and(eq(domains.userId, demoId), eq(domains.hostname, 'bakery.test')));
+
+    await demo.post('/api/demo/reset');
+
+    const [after] = await db.select().from(domains).where(and(eq(domains.userId, demoId), eq(domains.hostname, 'bakery.test')));
+    expect(after).toMatchObject({
+      developerName: 'Tunde',
+      developerEmail: 'tunde@webcraft.example',
+      developerAutoSend: true,
+      developerStopToken: 'stop-token-for-tests-456',
+    });
+  });
 });

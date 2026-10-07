@@ -16,6 +16,8 @@ const SignInPage = lazy(() => import('@/pages/SignInPage').then((m) => ({ defaul
 const SignUpPage = lazy(() => import('@/pages/SignUpPage').then((m) => ({ default: m.SignUpPage })));
 const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })));
 const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })));
+const ContactPage = lazy(() => import('@/pages/ContactPage').then((m) => ({ default: m.ContactPage })));
+const StopReportsPage = lazy(() => import('@/pages/StopReportsPage').then((m) => ({ default: m.StopReportsPage })));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
 
 export function App() {
@@ -26,6 +28,8 @@ export function App() {
           {/* Anyone can see these. */}
           <Route element={<PublicLayout />}>
             <Route index element={<LandingPage />} />
+            <Route path="contact" element={<ContactPage />} />
+            <Route path="stop-reports" element={<StopReportsPage />} />
           </Route>
           {/* Sign-in, sign-up and password reset bring their own split-screen frame. */}
           <Route path="sign-in" element={<SignInPage />} />

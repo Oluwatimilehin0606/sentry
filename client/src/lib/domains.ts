@@ -12,7 +12,11 @@ export type Domain = {
   rescanInterval: RescanInterval;
   nextCheckAt: string | null;
   alertsEnabled: boolean;
+  /** Whoever built the website: "Send to my developer" emails them reports. */
+  developer: Developer | null;
 };
+
+export type Developer = { name: string; email: string; autoSend: boolean };
 
 export type RescanInterval = 'none' | 'weekly' | 'monthly';
 
@@ -104,6 +108,8 @@ export type RunNowResult = {
   current: { grade: Grade; score: number };
   /** Where the alert email went, when one was sent. */
   emailedTo: string | null;
+  /** Where the report went, when it was also sent to the website's developer. */
+  developerEmailed: string | null;
 };
 
 export function useRunNow() {
@@ -129,7 +135,8 @@ export function runNowSummary(hostname: string, r: RunNowResult): { worse: boole
   const { previous, current } = r;
   const dropped = !!previous && GRADE_ORDER.indexOf(current.grade) > GRADE_ORDER.indexOf(previous.grade);
   const worse = dropped || r.outcome === 'alerted';
-  const email = r.emailedTo ? { email: `Alert email sent to ${r.emailedTo}.` } : {};
+  const sentTo = [r.emailedTo && `Alert email sent to ${r.emailedTo}.`, r.developerEmailed && `Report sent to your developer (${r.developerEmailed}).`];
+  const email = sentTo.some(Boolean) ? { email: sentTo.filter(Boolean).join(' ') } : {};
   if (dropped) {
     return { worse, text: `${hostname} dropped from ${withArticle(previous!.grade)} to ${withArticle(current.grade)}.`, ...email };
   }
@@ -173,4 +180,41 @@ export function recordName(hostname: string): string {
   const secondLevel = /^(com|co|org|net|gov|edu|ac|sch|name|mil)$/;
   const apexLength = parts.length >= 3 && secondLevel.test(parts.at(-2)!) ? 3 : 2;
   return parts.length <= apexLength ? '@' : parts.slice(0, parts.length - apexLength).join('.');
+}
+
+/** "Your developer" on the website's page: save or change who gets the reports. */
+export function useSaveDeveloper() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...developer }: Developer & { id: string }) =>
+      call<{ domain: Domain }>(`/api/domains/${id}/developer`, { method: 'PUT', body: JSON.stringify(developer) }).then(
+        (r) => r.domain,
+      ),
+    onSuccess: (domain) => client.setQueryData<Domain[]>(KEY, (list) => list?.map((d) => (d.id === domain.id ? domain : d))),
+  });
+}
+
+export function useRemoveDeveloper() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      call<{ domain: Domain }>(`/api/domains/${id}/developer`, { method: 'DELETE' }).then((r) => r.domain),
+    onSuccess: (domain) => client.setQueryData<Domain[]>(KEY, (list) => list?.map((d) => (d.id === domain.id ? domain : d))),
+  });
+}
+
+/** "Send to my developer" on a report: a new developer is remembered for the website. */
+export function useSendToDeveloper(reportId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { developer?: { name: string; email: string }; note?: string; autoSend?: boolean; copyToMe: boolean }) =>
+      call<{ sentTo: { name: string; email: string }; at: string }>(`/api/scans/${reportId}/send`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: KEY });
+      void client.invalidateQueries({ queryKey: ['scans', 'report', reportId] });
+    },
+  });
 }

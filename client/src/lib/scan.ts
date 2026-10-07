@@ -35,6 +35,8 @@ export type ScanReport = {
   grade: Grade;
   summary: string;
   findings: ReportFinding[];
+  /** The last time the saved report was emailed to a developer ("Send to my developer"). */
+  sentToDeveloper?: { to: string; at: string } | null;
   /** Present on saved reports (every finished check is saved). */
   changes?: ReportChanges | null;
   /** "scheduled" = an automatic check. */
