@@ -1,5 +1,7 @@
 # Sentry
 
+[![Tests](https://github.com/Oluwatimilehin0606/sentry/actions/workflows/tests.yml/badge.svg)](https://github.com/Oluwatimilehin0606/sentry/actions/workflows/tests.yml)
+
 **Self-serve cyber-readiness assessment for small and medium-sized businesses (SMEs).**
 
 Sentry scans a business's public-facing domain for common security gaps — SSL/TLS misconfigurations, missing HTTP security headers, and exposed sensitive paths — and translates the findings into a plain-English report with a single, easy-to-understand risk score.
@@ -35,7 +37,7 @@ Built to be safe and private:
 - Rate limits everywhere: sign-in and sign-up 5 a minute, confirm and reset emails 5 an hour, checks per account, and 300 API requests a minute per visitor overall.
 - Privacy: API answers are never stored by browsers (`no-store`); the installed app keeps only Sentry's own code on the device, never personal data; one cookie, for signing in, and no tracking or outside scripts.
 - Strict security headers on Sentry itself, including a Content-Security-Policy with no inline scripts and a Permissions-Policy; it checks itself to an **A**. Google PageSpeed Insights: 95–100 on performance, accessibility, best practices and SEO, phone and desktop.
-- About 220 automated tests, plus a browser test that walks the whole journey in Chrome (sign-up with email confirmation included) against a deliberately weak pretend website.
+- About 240 automated tests, plus a browser test that walks the whole journey in Chrome (sign-up with email confirmation included) against a deliberately weak pretend website. GitHub runs them all on every change (the badge above).
 
 ## Features
 

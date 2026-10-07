@@ -11,7 +11,7 @@ Built in blocks so it fits the slot: the **live demo is 5 minutes**; the slides 
 3. **Sentry in one sentence.** Regular, automated security check-ups of your website between expert assessments: one grade, A to F, in plain English, and a report you send to whoever built your site, so they know exactly what to patch.
 4. **How it works.** Check → grade and plain-English report → prove the website is yours → Sentry checks it every week or month → if it finds a problem, you get an alert and **your developer gets the report** to fix it.
 5. **Safe by design** *(optional)*. Only public websites; deeper checks only after you prove ownership with a DNS record; every visitor limited so it can't be used to attack anyone. Your account and data are protected too: email confirmed at sign-up, passwords from data breaches refused, and you can download or delete everything Sentry holds about you at any time. Sentry's own site scores an A.
-6. **Built and online** *(optional)*. Live at csentinel.com.ng on free plans (Render, Neon, Resend, Cloudflare), installable on any phone, and an Android app; Google PageSpeed 95–100 for speed, accessibility, best practices and SEO; about 220 automated tests; open source on GitHub.
+6. **Built and online** *(optional)*. Live at csentinel.com.ng on free plans (Render, Neon, Resend, Cloudflare), installable on any phone, and an Android app; Google PageSpeed 95–100 for speed, accessibility, best practices and SEO; about 240 automated tests, run by GitHub on every change; open source on GitHub.
 7. **Next.** Hand-over to Qubators; two-step sign-in; the Play Store; more checks (email security, WordPress).
 
 ## Live demo (5 minutes)
