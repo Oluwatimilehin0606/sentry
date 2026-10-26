@@ -55,7 +55,10 @@ server.listen(port, production ? '0.0.0.0' : undefined, () => {
   logger.info(`Sentry is running at ${env.APP_URL}${production ? ` (listening on port ${port})` : ''}`);
   // Automatic checks run inside this process; tests (and the browser test) run without them.
   if (env.NODE_ENV !== 'test') {
-    startScheduler();
-    logger.info('Automatic checks: looking for due websites every minute');
+    // Online, once an hour: weekly and monthly checks don't need minute precision, and every
+    // look wakes the database. Checking each minute kept Neon's free compute from ever sleeping
+    // once the server itself stayed awake. Locally, each minute (npm run due-now relies on it).
+    startScheduler(production ? 60 * 60_000 : 60_000);
+    logger.info(`Automatic checks: looking for due websites every ${production ? 'hour' : 'minute'}`);
   }
 });

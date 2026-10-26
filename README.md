@@ -148,7 +148,7 @@ npm run demo       # Sentry plus bakery.test, and opens the browser
 ```
 
 - It's the same Sentry as `npm run dev`: same address, same database, same accounts. Only one of the two can run at a time; if the other is still running, it says so.
-- It runs with `NODE_ENV=production`: the finished website with Sentry's full security headers, and automatic checks every minute. It brings the database up to date by itself.
+- It runs with `NODE_ENV=production`: the finished website with Sentry's full security headers, and the scheduler looking for due automatic checks every hour (each look wakes the database, so a shorter interval would use up Neon's free compute). It brings the database up to date by itself.
 - Settings come from `.env`. For anything the demo should do differently, create `.env.demo` (never committed) with just those lines, e.g. the real email service for alert emails (`SMTP_URL`, `MAIL_FROM`). Development keeps using `.env` alone.
 - `npm run db:seed` fills the demo database with an account and websites that already have weeks of checks: bakery.test (an A for five weeks, so checking it live shows "A → F, 7 new"), two made-up `.example` businesses, and one website still waiting to be proven. Each run replaces the demo account with a fresh one (other accounts are left alone), so run it before each rehearsal. Put `DEMO_EMAIL=` (the address alert emails should reach) in `.env.demo` first; the password is made up and saved there as `DEMO_PASSWORD` if you don't set one.
 - bakery.test only works while Sentry runs on this machine (`APP_URL` is localhost); the pretend-website switch refuses to start once Sentry is online.

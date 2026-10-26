@@ -169,7 +169,7 @@ export async function runDueChecks(opts: RunOptions = {}): Promise<RunResult> {
   return results;
 }
 
-/** Checks for due websites every minute while the server runs (not in tests). */
+/** Checks for due websites every intervalMs while the server runs (not in tests). */
 export function startScheduler(intervalMs = 60_000): () => void {
   let running = false;
   const tick = async () => {
